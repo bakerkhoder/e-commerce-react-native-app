@@ -19,6 +19,7 @@ interface AuthContextValue {
     fullName: string,
   ) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (user: User) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -67,9 +68,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await AsyncStorage.multiRemove(["authToken", "authUser"]);
     setUser(null);
   }
-
+  // 2) next to logout():
+  async function updateUser(updated: User) {
+    await AsyncStorage.setItem("authUser", JSON.stringify(updated));
+    setUser(updated);
+  }
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, isLoading, login, register, logout, updateUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

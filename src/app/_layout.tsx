@@ -30,6 +30,18 @@ export default function RootLayout() {
             name="admin/product-form"
             options={{ headerShown: true, title: "Product" }}
           />
+          <Stack.Screen
+            name="orders/index"
+            options={{ headerShown: true, title: "My Orders" }}
+          />
+          <Stack.Screen
+            name="orders/[id]"
+            options={{ headerShown: true, title: "Order" }}
+          />
+          <Stack.Screen
+            name="account/edit"
+            options={{ headerShown: true, title: "Edit Profile" }}
+          />
         </Stack>
       </ThemeProvider>
     </AuthProvider>

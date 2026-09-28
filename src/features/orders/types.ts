@@ -1,13 +1,22 @@
+export type OrderStatus =
+  | "PENDING"
+  | "PAID"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "CANCELLED";
+
+export interface OrderItem {
+  productId: number;
+  productName: string;
+  unitPrice: number;
+  quantity: number;
+}
+
 export interface Order {
   id: number;
   userId: number;
-  items: {
-    productId: number;
-    productName: string;
-    unitPrice: number;
-    quantity: number;
-  }[];
+  items: OrderItem[];
   totalAmount: number;
-  status: string;
+  status: OrderStatus;
   createdAt: string;
 }

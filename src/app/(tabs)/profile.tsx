@@ -1,13 +1,22 @@
-import { useAuth } from "@/features/auth/context/AuthContext";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useAuth } from "../../features/auth/context/AuthContext";
+
+function MenuRow({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable style={styles.row} onPress={onPress}>
+      <Text style={styles.rowText}>{label}</Text>
+      <Text style={styles.chevron}>›</Text>
+    </Pressable>
+  );
+}
 
 export default function ProfileTab() {
   const { user, logout } = useAuth();
 
   if (!user) {
     return (
-      <View style={styles.container}>
+      <View style={styles.center}>
         <Text style={styles.message}>You're not logged in yet.</Text>
         <Pressable
           style={styles.button}
@@ -21,20 +30,24 @@ export default function ProfileTab() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.name}>{user.fullName}</Text>
+        <Text style={styles.email}>{user.email}</Text>
+      </View>
+
+      <MenuRow label="My Orders" onPress={() => router.push("/orders")} />
+      <MenuRow
+        label="Edit Profile"
+        onPress={() => router.push("/account/edit")}
+      />
       {user.role === "ADMIN" && (
-        <Pressable
-          style={[
-            styles.button,
-            { backgroundColor: "#2563eb", marginBottom: 12 },
-          ]}
+        <MenuRow
+          label="Manage Products"
           onPress={() => router.push("/admin/products")}
-        >
-          <Text style={styles.buttonText}>Manage Products</Text>
-        </Pressable>
+        />
       )}
-      <Text style={styles.name}>{user.fullName}</Text>
-      <Text style={styles.email}>{user.email}</Text>
-      <Pressable style={[styles.button, styles.logoutButton]} onPress={logout}>
+
+      <Pressable style={[styles.button, styles.logout]} onPress={logout}>
         <Text style={styles.buttonText}>Log Out</Text>
       </Pressable>
     </View>
@@ -42,21 +55,34 @@ export default function ProfileTab() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1, padding: 20 },
+  center: {
     flex: 1,
-    padding: 24,
     justifyContent: "center",
     alignItems: "center",
+    padding: 24,
   },
-  message: { fontSize: 16, marginBottom: 16 },
+  header: { alignItems: "center", marginBottom: 24, marginTop: 8 },
   name: { fontSize: 20, fontWeight: "700" },
-  email: { fontSize: 14, color: "#666", marginTop: 4, marginBottom: 24 },
+  email: { fontSize: 14, color: "#666", marginTop: 4 },
+  message: { fontSize: 16, marginBottom: 16 },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  rowText: { fontSize: 16 },
+  chevron: { fontSize: 22, color: "#aaa" },
   button: {
     backgroundColor: "#111",
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 24,
+    alignItems: "center",
   },
-  logoutButton: { backgroundColor: "#c0392b" },
+  logout: { backgroundColor: "#c0392b", marginTop: 32 },
   buttonText: { color: "#fff", fontWeight: "600" },
 });
