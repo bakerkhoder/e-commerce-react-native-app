@@ -1,4 +1,4 @@
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   Alert,
@@ -39,7 +39,7 @@ export function AdminProductsScreen() {
     <View style={{ flex: 1 }}>
       <Pressable
         style={styles.addButton}
-        // onPress={() => router.push("/admin/product-form")}
+        onPress={() => router.push("/admin/product-form")}
       >
         <Text style={styles.addButtonText}>+ New Product</Text>
       </Pressable>
@@ -56,7 +56,7 @@ export function AdminProductsScreen() {
               </Text>
             </View>
             <Pressable
-            // onPress={() => router.push(`/admin/product-form?id=${item.id}`)}
+              onPress={() => router.push(`/admin/product-form?id=${item.id}`)}
             >
               <Text style={styles.edit}>Edit</Text>
             </Pressable>

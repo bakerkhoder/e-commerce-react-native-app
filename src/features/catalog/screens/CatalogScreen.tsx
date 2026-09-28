@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  RefreshControl,
   StyleSheet,
+  Text,
   TextInput,
   View,
 } from "react-native";
@@ -13,62 +16,64 @@ import { Product } from "../types";
 const DEBOUNCE_MS = 400;
 
 export function CatalogScreen() {
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [searching, setSearching] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    catalogApi.getProducts().then((data) => {
-      setAllProducts(data);
-      setProducts(data);
-      setLoading(false);
-    });
+  const queryRef = useRef(""); // latest query, readable inside focus callbacks
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestId = useRef(0);
+
+  // Empty query -> full catalog, otherwise -> search. The request counter makes sure a slow
+  // older response can never overwrite a newer one (classic typeahead race condition).
+  const load = useCallback(async (text: string) => {
+    const id = ++requestId.current;
+    const term = text.trim();
+    const data = term
+      ? await catalogApi.search(term)
+      : await catalogApi.getProducts();
+    if (id === requestId.current) setProducts(data);
   }, []);
+
+  // Runs every time the Shop tab gains focus (e.g. after an admin adds a product)
+  useFocusEffect(
+    useCallback(() => {
+      load(queryRef.current)
+        .catch(() => {})
+        .finally(() => setInitialLoading(false));
+    }, [load]),
+  );
 
   function handleQueryChange(text: string) {
     setQuery(text);
-
-    // Cancel any pending search — this is the actual debounce mechanism:
-    // every keystroke clears the previous timer and starts a fresh one
+    queryRef.current = text;
     if (debounceRef.current) clearTimeout(debounceRef.current);
-
-    debounceRef.current = setTimeout(() => runSearch(text), DEBOUNCE_MS);
+    debounceRef.current = setTimeout(() => {
+      setSearching(true);
+      load(text)
+        .catch(() => {})
+        .finally(() => setSearching(false));
+    }, DEBOUNCE_MS);
   }
 
-  async function runSearch(text: string) {
-    if (text.trim().length === 0) {
-      setProducts(allProducts);
-      setSearching(false);
-      return;
-    }
-    setSearching(true);
+  async function handleRefresh() {
+    setRefreshing(true);
     try {
-      const results = await catalogApi.search(text);
-      const mapped = results.map((doc: any) => ({
-        id: doc.metadata.productId,
-        name: doc.metadata.name,
-        price: Number(doc.metadata.price),
-        categoryName: "",
-        description: doc.text,
-      })) as Product[];
-      setProducts(mapped);
+      await load(queryRef.current);
     } finally {
-      setSearching(false);
+      setRefreshing(false);
     }
   }
 
-  // Clean up any pending timer if the screen unmounts mid-typing —
-  // prevents a "setState on unmounted component" warning
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, []);
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator />
@@ -80,9 +85,10 @@ export function CatalogScreen() {
     <View style={{ flex: 1 }}>
       <TextInput
         style={styles.searchBar}
-        placeholder="Search... try 'organic' or 'milk'"
+        placeholder="Search products..."
         value={query}
         onChangeText={handleQueryChange}
+        autoCapitalize="none"
       />
       {searching && <ActivityIndicator style={{ marginTop: 8 }} />}
       <FlatList
@@ -90,6 +96,16 @@ export function CatalogScreen() {
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={{ padding: 16 }}
         renderItem={({ item }) => <ProductCard product={item} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+        ListEmptyComponent={
+          <Text style={styles.empty}>
+            {query.trim()
+              ? "No products match your search."
+              : "No products yet."}
+          </Text>
+        }
       />
     </View>
   );
@@ -106,4 +122,5 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 15,
   },
+  empty: { textAlign: "center", color: "#888", marginTop: 40 },
 });

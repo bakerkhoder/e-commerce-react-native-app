@@ -22,6 +22,14 @@ export default function RootLayout() {
             name="auth/register"
             options={{ headerShown: true, title: "Register" }}
           />
+          <Stack.Screen
+            name="admin/products"
+            options={{ headerShown: true, title: "Manage Products" }}
+          />
+          <Stack.Screen
+            name="admin/product-form"
+            options={{ headerShown: true, title: "Product" }}
+          />
         </Stack>
       </ThemeProvider>
     </AuthProvider>

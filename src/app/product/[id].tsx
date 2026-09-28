@@ -20,9 +20,10 @@ export default function ProductDetail() {
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
-    catalogApi.getProducts().then((products) => {
-      setProduct(products.find((p) => p.id === Number(id)) ?? null);
-    });
+    catalogApi
+      .getProduct(Number(id))
+      .then(setProduct)
+      .catch(() => setProduct(null));
   }, [id]);
 
   async function handleAddToCart() {
