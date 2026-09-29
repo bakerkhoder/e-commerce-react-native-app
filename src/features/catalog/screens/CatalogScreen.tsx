@@ -10,37 +10,45 @@ import {
   View,
 } from "react-native";
 import { catalogApi } from "../api/catalogApi";
+import { CategoryChips } from "../components/CategoryChips";
 import { ProductCard } from "../components/ProductCard";
-import { Product } from "../types";
+import { Category, Product } from "../types";
 
 const DEBOUNCE_MS = 400;
 
 export function CatalogScreen() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [query, setQuery] = useState("");
+  const [categoryId, setCategoryId] = useState<number | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const queryRef = useRef(""); // latest query, readable inside focus callbacks
+  const queryRef = useRef("");
+  const categoryRef = useRef<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestId = useRef(0);
 
-  // Empty query -> full catalog, otherwise -> search. The request counter makes sure a slow
-  // older response can never overwrite a newer one (classic typeahead race condition).
-  const load = useCallback(async (text: string) => {
+  useEffect(() => {
+    catalogApi
+      .getCategories()
+      .then(setCategories)
+      .catch(() => {});
+  }, []);
+
+  const load = useCallback(async (text: string, catId: number | null) => {
     const id = ++requestId.current;
     const term = text.trim();
     const data = term
-      ? await catalogApi.search(term)
-      : await catalogApi.getProducts();
+      ? await catalogApi.search(term, catId ?? undefined)
+      : await catalogApi.getProducts(catId ?? undefined);
     if (id === requestId.current) setProducts(data);
   }, []);
 
-  // Runs every time the Shop tab gains focus (e.g. after an admin adds a product)
   useFocusEffect(
     useCallback(() => {
-      load(queryRef.current)
+      load(queryRef.current, categoryRef.current)
         .catch(() => {})
         .finally(() => setInitialLoading(false));
     }, [load]),
@@ -52,16 +60,25 @@ export function CatalogScreen() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       setSearching(true);
-      load(text)
+      load(text, categoryRef.current)
         .catch(() => {})
         .finally(() => setSearching(false));
     }, DEBOUNCE_MS);
   }
 
+  function handleCategorySelect(id: number | null) {
+    setCategoryId(id);
+    categoryRef.current = id;
+    setSearching(true);
+    load(queryRef.current, id)
+      .catch(() => {})
+      .finally(() => setSearching(false));
+  }
+
   async function handleRefresh() {
     setRefreshing(true);
     try {
-      await load(queryRef.current);
+      await load(queryRef.current, categoryRef.current);
     } finally {
       setRefreshing(false);
     }
@@ -90,6 +107,11 @@ export function CatalogScreen() {
         onChangeText={handleQueryChange}
         autoCapitalize="none"
       />
+      <CategoryChips
+        categories={categories}
+        selectedId={categoryId}
+        onSelect={handleCategorySelect}
+      />
       {searching && <ActivityIndicator style={{ marginTop: 8 }} />}
       <FlatList
         data={products}
@@ -101,8 +123,8 @@ export function CatalogScreen() {
         }
         ListEmptyComponent={
           <Text style={styles.empty}>
-            {query.trim()
-              ? "No products match your search."
+            {query.trim() || categoryId
+              ? "No products match."
               : "No products yet."}
           </Text>
         }
@@ -115,7 +137,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   searchBar: {
     margin: 16,
-    marginBottom: 0,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 10,
