@@ -1,20 +1,22 @@
+import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
+import { IMAGE_BASE_URL } from "../../../api/client";
 import { useRequireAdmin } from "../../auth/hooks/useRequireAdmin";
 import { catalogApi } from "../../catalog/api/catalogApi";
 import { Category } from "../../catalog/types";
 import { adminApi } from "../api/adminApi";
-
 interface AttrRow {
   key: string;
   value: string;
@@ -43,6 +45,13 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
   const [unit, setUnit] = useState("piece");
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [attrs, setAttrs] = useState<AttrRow[]>([]);
+  // replace localImageUri/existingThumb state with:
+  const [images, setImages] = useState<{ id: number; thumbnailUrl: string }[]>(
+    [],
+  );
+  const [savedProductId, setSavedProductId] = useState<number | undefined>(
+    productId,
+  );
 
   useEffect(() => {
     catalogApi.getCategories().then(setCategories);
@@ -60,6 +69,12 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
             Object.entries(p.attributes ?? {}).map(([key, value]) => ({
               key,
               value: String(value),
+            })),
+          );
+          setImages(
+            p.images.map((img) => ({
+              id: img.id,
+              thumbnailUrl: img.thumbnailUrl,
             })),
           );
         })
@@ -80,7 +95,38 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
       prev.map((a, i) => (i === index ? { ...a, [field]: text } : a)),
     );
   }
+  async function pickAndUploadImage() {
+    if (!savedProductId) {
+      Alert.alert("Save first", "Save the product before adding photos.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.8,
+    });
+    if (result.canceled) return;
+    const updated = await adminApi.addImage(
+      savedProductId,
+      result.assets[0].uri,
+    );
+    setImages(
+      updated.images.map((img) => ({
+        id: img.id,
+        thumbnailUrl: img.thumbnailUrl,
+      })),
+    );
+  }
 
+  async function handleRemoveImage(imageId: number) {
+    if (!savedProductId) return;
+    const updated = await adminApi.removeImage(savedProductId, imageId);
+    setImages(
+      updated.images.map((img) => ({
+        id: img.id,
+        thumbnailUrl: img.thumbnailUrl,
+      })),
+    );
+  }
   async function handleSave() {
     if (!name.trim() || !price || !stock || categoryId === null) {
       Alert.alert(
@@ -113,9 +159,15 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
 
     setSaving(true);
     try {
-      if (isEdit) await adminApi.updateProduct(productId!, payload);
-      else await adminApi.createProduct(payload);
-      router.back();
+      const saved = isEdit
+        ? await adminApi.updateProduct(savedProductId!, payload)
+        : await adminApi.createProduct(payload);
+      setSavedProductId(saved.id);
+      if (!isEdit) {
+        Alert.alert("Product created", "You can now add photos below.");
+      } else {
+        router.back();
+      }
     } catch (err: any) {
       Alert.alert(
         "Save failed",
@@ -131,6 +183,26 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
+      <Text style={styles.label}>Photos</Text>
+      <View style={styles.gallery}>
+        {images.map((img) => (
+          <View key={img.id} style={styles.thumbWrap}>
+            <Image
+              source={{ uri: `${IMAGE_BASE_URL}${img.thumbnailUrl}` }}
+              style={styles.adminThumb}
+            />
+            <Pressable
+              style={styles.removeBadge}
+              onPress={() => handleRemoveImage(img.id)}
+            >
+              <Text style={styles.removeBadgeText}>✕</Text>
+            </Pressable>
+          </View>
+        ))}
+        <Pressable style={styles.addThumb} onPress={pickAndUploadImage}>
+          <Text style={{ fontSize: 24, color: "#888" }}>+</Text>
+        </Pressable>
+      </View>
       <Text style={styles.label}>Name</Text>
       <TextInput style={styles.input} value={name} onChangeText={setName} />
 
@@ -281,4 +353,29 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   saveText: { color: "#fff", fontWeight: "600" },
+  gallery: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  thumbWrap: { position: "relative" },
+  adminThumb: { width: 70, height: 70, borderRadius: 8 },
+  removeBadge: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    backgroundColor: "#c0392b",
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  removeBadgeText: { color: "#fff", fontSize: 12 },
+  addThumb: {
+    width: 70,
+    height: 70,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderStyle: "dashed",
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });

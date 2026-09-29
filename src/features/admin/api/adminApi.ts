@@ -17,4 +17,21 @@ export const adminApi = {
   updateProduct: (id: number, data: ProductPayload) =>
     apiClient.put<Product>(`/products/${id}`, data).then((r) => r.data),
   deleteProduct: (id: number) => apiClient.delete(`/products/${id}`),
+  addImage: (productId: number, uri: string) => {
+    const formData = new FormData();
+    formData.append("file", {
+      uri,
+      name: "photo.jpg",
+      type: "image/jpeg",
+    } as any);
+    return apiClient
+      .post<Product>(`/products/${productId}/images`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((r) => r.data);
+  },
+  removeImage: (productId: number, imageId: number) =>
+    apiClient
+      .delete<Product>(`/products/${productId}/images/${imageId}`)
+      .then((r) => r.data),
 };

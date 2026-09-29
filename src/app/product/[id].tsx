@@ -1,3 +1,4 @@
+import { ProductGallery } from "@/features/catalog/components/ProductGallery";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -61,6 +62,7 @@ export default function ProductDetail() {
 
   return (
     <View style={styles.container}>
+      <ProductGallery images={product.images} />
       <Text style={styles.name}>{product.name}</Text>
       <Text style={styles.category}>{product.categoryName}</Text>
       <Text style={styles.description}>{product.description}</Text>
@@ -68,7 +70,6 @@ export default function ProductDetail() {
         ${product.price.toFixed(2)} / {product.unit}
       </Text>
       <Text style={styles.stock}>{product.stockQuantity} in stock</Text>
-
       <Pressable
         style={styles.button}
         onPress={handleAddToCart}

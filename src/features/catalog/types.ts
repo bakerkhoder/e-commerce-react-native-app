@@ -3,6 +3,11 @@ export interface Category {
   name: string;
   vertical: string;
 }
+export interface ProductImage {
+  id: number;
+  imageUrl: string;
+  thumbnailUrl: string;
+}
 
 export interface Product {
   id: number;
@@ -14,4 +19,7 @@ export interface Product {
   stockQuantity: number;
   unit: string;
   attributes: Record<string, string | number | boolean>;
+  imageUrl: string | null;
+  images: ProductImage[];
+  thumbnailUrl: string | null; // convenience: primary image's thumbnail
 }
