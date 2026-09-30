@@ -1,3 +1,4 @@
+import { useAuth } from "@/features/auth/context/AuthContext";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -14,11 +15,15 @@ import { adminApi } from "../api/adminApi";
 
 export function AdminProductsScreen() {
   const [products, setProducts] = useState<Product[]>([]);
-
+  const { user } = useAuth();
   useFocusEffect(
     useCallback(() => {
-      catalogApi.getProducts().then(setProducts);
-    }, []),
+      const fetch =
+        user?.role === "SELLER"
+          ? adminApi.getMyProducts()
+          : catalogApi.getProducts();
+      fetch.then(setProducts);
+    }, [user]),
   );
 
   function handleDelete(id: number) {
@@ -39,7 +44,7 @@ export function AdminProductsScreen() {
     <View style={{ flex: 1 }}>
       <Pressable
         style={styles.addButton}
-        onPress={() => router.push("/admin/product-form")}
+        onPress={() => router.push("/manage/product-form")}
       >
         <Text style={styles.addButtonText}>+ New Product</Text>
       </Pressable>
@@ -56,7 +61,7 @@ export function AdminProductsScreen() {
               </Text>
             </View>
             <Pressable
-              onPress={() => router.push(`/admin/product-form?id=${item.id}`)}
+              onPress={() => router.push(`/manage/product-form?id=${item.id}`)}
             >
               <Text style={styles.edit}>Edit</Text>
             </Pressable>

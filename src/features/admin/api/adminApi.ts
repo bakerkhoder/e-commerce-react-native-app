@@ -34,4 +34,13 @@ export const adminApi = {
     apiClient
       .delete<Product>(`/products/${productId}/images/${imageId}`)
       .then((r) => r.data),
+
+  getMyProducts: () =>
+    apiClient.get<Product[]>("/products/mine").then((r) => r.data),
+  getPending: () =>
+    apiClient.get<Product[]>("/products/pending").then((r) => r.data),
+  approve: (id: number) =>
+    apiClient.put<Product>(`/products/${id}/approve`).then((r) => r.data),
+  reject: (id: number) =>
+    apiClient.put<Product>(`/products/${id}/reject`).then((r) => r.data),
 };

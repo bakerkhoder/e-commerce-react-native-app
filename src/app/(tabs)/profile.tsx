@@ -40,13 +40,34 @@ export default function ProfileTab() {
         label="Edit Profile"
         onPress={() => router.push("/account/edit")}
       />
-      {user.role === "ADMIN" && (
+      {user.role === "SELLER" && (
         <MenuRow
-          label="Manage Products"
-          onPress={() => router.push("/admin/products")}
+          label="My Products"
+          onPress={() => router.push("/manage/products")}
         />
       )}
-
+      {user.role === "ADMIN" && (
+        <>
+          <MenuRow
+            label="Manage Products"
+            onPress={() => router.push("/manage/products")}
+          />
+          <MenuRow
+            label="Pending Products"
+            onPress={() => router.push("/admin/pending")}
+          />
+          <MenuRow
+            label="Seller Applications"
+            onPress={() => router.push("/admin/seller-applications")}
+          />
+        </>
+      )}
+      {user.role === "CUSTOMER" && (
+        <MenuRow
+          label="Become a Seller"
+          onPress={() => router.push("/account/become-seller")}
+        />
+      )}
       <Pressable style={[styles.button, styles.logout]} onPress={logout}>
         <Text style={styles.buttonText}>Log Out</Text>
       </Pressable>

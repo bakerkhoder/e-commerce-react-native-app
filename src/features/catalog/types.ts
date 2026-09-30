@@ -22,4 +22,5 @@ export interface Product {
   imageUrl: string | null;
   images: ProductImage[];
   thumbnailUrl: string | null; // convenience: primary image's thumbnail
+  sellerId: number;
 }

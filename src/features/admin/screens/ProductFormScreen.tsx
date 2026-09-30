@@ -13,7 +13,6 @@ import {
   View,
 } from "react-native";
 import { IMAGE_BASE_URL } from "../../../api/client";
-import { useRequireAdmin } from "../../auth/hooks/useRequireAdmin";
 import { catalogApi } from "../../catalog/api/catalogApi";
 import { Category } from "../../catalog/types";
 import { adminApi } from "../api/adminApi";
@@ -31,7 +30,7 @@ function parseAttrValue(v: string): string | number | boolean {
 }
 
 export function ProductFormScreen({ productId }: { productId?: number }) {
-  const isAdmin = useRequireAdmin();
+  //const isAdmin = useRequireAdmin();
   const isEdit = productId !== undefined;
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -82,7 +81,8 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
     }
   }, [productId]);
 
-  if (!isAdmin) return null;
+  //if (!isAdmin) return null;
+
   if (loading)
     return (
       <View style={styles.center}>

@@ -12,7 +12,7 @@ export interface User {
   fullName: string;
 }
 
-export type Role = "CUSTOMER" | "ADMIN";
+export type Role = "CUSTOMER" | "ADMIN" | "SELLER";
 
 export interface User {
   userId: number;

@@ -23,11 +23,11 @@ export default function RootLayout() {
             options={{ headerShown: true, title: "Register" }}
           />
           <Stack.Screen
-            name="admin/products"
+            name="manage/products"
             options={{ headerShown: true, title: "Manage Products" }}
           />
           <Stack.Screen
-            name="admin/product-form"
+            name="manage/product-form"
             options={{ headerShown: true, title: "Product" }}
           />
           <Stack.Screen
@@ -41,6 +41,10 @@ export default function RootLayout() {
           <Stack.Screen
             name="account/edit"
             options={{ headerShown: true, title: "Edit Profile" }}
+          />
+          <Stack.Screen
+            name="admin/seller-applications"
+            options={{ headerShown: true, title: "Seller Applications" }}
           />
         </Stack>
       </ThemeProvider>
