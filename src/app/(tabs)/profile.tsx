@@ -60,6 +60,10 @@ export default function ProfileTab() {
             label="Seller Applications"
             onPress={() => router.push("/admin/seller-applications")}
           />
+          <MenuRow
+            label="All Orders"
+            onPress={() => router.push("/admin/orders")}
+          />
         </>
       )}
       {user.role === "CUSTOMER" && (

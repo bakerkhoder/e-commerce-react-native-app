@@ -1,14 +1,12 @@
-import { ordersApi } from "@/features/orders/api/ordersApi";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { useAuth } from "../../auth/context/AuthContext";
 import { CartItemRow } from "../components/CartItemRow";
@@ -57,25 +55,6 @@ export function CartScreen() {
     );
   }
 
-  async function handleCheckout() {
-    setCheckingOut(true);
-    try {
-      const order = await ordersApi.checkout();
-      Alert.alert(
-        "Order placed!",
-        `Order #${order.id} — total $${order.totalAmount.toFixed(2)}`,
-      );
-      await refresh();
-    } catch (err: any) {
-      Alert.alert(
-        "Checkout failed",
-        err.response?.data?.message ?? "Please try again.",
-      );
-    } finally {
-      setCheckingOut(false);
-    }
-  }
-
   return (
     <View style={styles.container}>
       <FlatList
@@ -90,12 +69,9 @@ export function CartScreen() {
         <Text style={styles.total}>Total: ${cart.total.toFixed(2)}</Text>
         <Pressable
           style={styles.button}
-          onPress={handleCheckout}
-          disabled={checkingOut}
+          onPress={() => router.push("/checkout")}
         >
-          <Text style={styles.buttonText}>
-            {checkingOut ? "Placing order..." : "Checkout"}
-          </Text>
+          <Text style={styles.buttonText}>Proceed to Checkout</Text>
         </Pressable>
       </View>
     </View>

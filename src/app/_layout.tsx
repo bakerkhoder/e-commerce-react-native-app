@@ -46,6 +46,10 @@ export default function RootLayout() {
             name="admin/seller-applications"
             options={{ headerShown: true, title: "Seller Applications" }}
           />
+          <Stack.Screen
+            name="checkout"
+            options={{ headerShown: true, title: "Checkout" }}
+          />
         </Stack>
       </ThemeProvider>
     </AuthProvider>

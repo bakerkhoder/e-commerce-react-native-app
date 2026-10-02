@@ -1,12 +1,13 @@
+import { PasswordInput } from "@/shared/components/PasswordInput";
 import { useState } from "react";
 import {
-    Alert,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { useAuth } from "../../auth/context/AuthContext";
 import { profileApi } from "../api/profileApi";
@@ -114,17 +115,16 @@ export function EditProfileScreen() {
       </Pressable>
 
       <Text style={[styles.section, { marginTop: 32 }]}>Change password</Text>
-      <TextInput
-        style={styles.input}
+
+      <PasswordInput
         placeholder="Current password"
         secureTextEntry
         value={currentPassword}
         onChangeText={setCurrentPassword}
       />
-      <TextInput
-        style={[styles.input, { marginTop: 10 }]}
+
+      <PasswordInput
         placeholder="New password (min 8 characters)"
-        secureTextEntry
         value={newPassword}
         onChangeText={setNewPassword}
       />

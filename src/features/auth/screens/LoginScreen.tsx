@@ -1,12 +1,13 @@
+import { PasswordInput } from "@/shared/components/PasswordInput";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    Alert,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
 
@@ -46,8 +47,8 @@ export function LoginScreen() {
         value={email}
         onChangeText={setEmail}
       />
-      <TextInput
-        style={styles.input}
+
+      <PasswordInput
         placeholder="Password"
         secureTextEntry
         value={password}
