@@ -9,4 +9,8 @@ export const cartApi = {
       .then((r) => r.data),
   removeItem: (productId: number) =>
     apiClient.delete<Cart>(`/cart/items/${productId}`).then((r) => r.data),
+  setQuantity: (productId: number, quantity: number) =>
+    apiClient
+      .put<Cart>(`/cart/items/${productId}`, { quantity })
+      .then((r) => r.data),
 };

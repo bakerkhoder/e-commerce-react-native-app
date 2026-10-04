@@ -1,5 +1,5 @@
 import { apiClient } from "../../../api/client";
-import { CheckoutPayload, Order } from "../types";
+import { CheckoutPayload, GuestCheckoutPayload, Order } from "../types";
 
 export const ordersApi = {
   checkout: (payload: CheckoutPayload) =>
@@ -11,5 +11,10 @@ export const ordersApi = {
   updateStatus: (id: number, status: string) =>
     apiClient
       .put<Order>(`/orders/${id}/status`, { status })
+      .then((r) => r.data),
+
+  guestCheckout: (payload: GuestCheckoutPayload) =>
+    apiClient
+      .post<Order>("/orders/guest-checkout", payload)
       .then((r) => r.data),
 };

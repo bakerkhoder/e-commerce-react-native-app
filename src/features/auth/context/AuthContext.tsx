@@ -17,6 +17,9 @@ interface AuthContextValue {
     email: string,
     password: string,
     fullName: string,
+    phone?: string,
+    city?: string,
+    addressLine?: string,
   ) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (user: User) => Promise<void>;
@@ -59,8 +62,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await persistSession(response);
   }
 
-  async function register(email: string, password: string, fullName: string) {
-    const response = await authApi.register(email, password, fullName);
+  async function register(
+    email: string,
+    password: string,
+    fullName: string,
+    phone?: string,
+    city?: string,
+    addressLine?: string,
+  ) {
+    const response = await authApi.register(
+      email,
+      password,
+      fullName,
+      phone,
+      city,
+      addressLine,
+    );
     await persistSession(response);
   }
 

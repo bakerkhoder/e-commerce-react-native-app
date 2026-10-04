@@ -1,53 +1,12 @@
-import { router, useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { useAuth } from "../../auth/context/AuthContext";
+import { router } from "expo-router";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { CartItemRow } from "../components/CartItemRow";
-import { useCart } from "../hooks/useCart";
+import { useCart } from "../context/CartContext";
 
 export function CartScreen() {
-  const { user } = useAuth();
-  const { cart, loading, refresh, removeItem } = useCart();
-  const [checkingOut, setCheckingOut] = useState(false);
+  const { items, total, isGuest, updateQuantity } = useCart();
 
-  // Refetch every time the Cart tab comes into focus, not just on first mount —
-  // so items added from a product screen actually show up here without a manual reload
-  useFocusEffect(
-    useCallback(() => {
-      if (user) refresh();
-    }, [user]),
-  );
-
-  if (!user) {
-    return (
-      <View style={styles.center}>
-        <Text>Log in to view your cart.</Text>
-        <Pressable
-          style={styles.button}
-          onPress={() => router.push("/auth/login")}
-        >
-          <Text style={styles.buttonText}>Log In</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
-  if (loading && !cart) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator />
-      </View>
-    );
-  }
-
-  if (!cart || cart.items.length === 0) {
+  if (items.length === 0) {
     return (
       <View style={styles.center}>
         <Text>Your cart is empty.</Text>
@@ -57,16 +16,23 @@ export function CartScreen() {
 
   return (
     <View style={styles.container}>
+      {isGuest && (
+        <View style={styles.guestBanner}>
+          <Text style={styles.guestText}>
+            Shopping as a guest — log in to save your cart across devices.
+          </Text>
+        </View>
+      )}
       <FlatList
-        data={cart.items}
+        data={items}
         keyExtractor={(item) => item.productId.toString()}
         renderItem={({ item }) => (
-          <CartItemRow item={item} onRemove={removeItem} />
+          <CartItemRow item={item} onChangeQuantity={updateQuantity} />
         )}
         contentContainerStyle={{ padding: 16 }}
       />
       <View style={styles.footer}>
-        <Text style={styles.total}>Total: ${cart.total.toFixed(2)}</Text>
+        <Text style={styles.total}>Total: ${total.toFixed(2)}</Text>
         <Pressable
           style={styles.button}
           onPress={() => router.push("/checkout")}
@@ -85,8 +51,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 24,
-    gap: 12,
   },
+  guestBanner: { backgroundColor: "#fff8e1", padding: 10 },
+  guestText: { fontSize: 12, color: "#8a6d00", textAlign: "center" },
   footer: { padding: 16, borderTopWidth: 1, borderTopColor: "#eee" },
   total: {
     fontSize: 18,

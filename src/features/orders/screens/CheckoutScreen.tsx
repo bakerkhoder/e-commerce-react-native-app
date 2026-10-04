@@ -1,4 +1,5 @@
 import { useAuth } from "@/features/auth/context/AuthContext";
+import { useCart } from "@/features/cart/context/CartContext";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -11,7 +12,6 @@ import {
   View,
 } from "react-native";
 import { formatCurrency } from "../../../shared/utils/format";
-import { useCart } from "../../cart/hooks/useCart";
 import { profileApi } from "../../profile/api/profileApi";
 import { ordersApi } from "../api/ordersApi";
 import { PaymentMethodType, ShippingMethodType } from "../types";
@@ -43,7 +43,8 @@ const PAYMENT_OPTIONS: {
 ];
 
 export function CheckoutScreen() {
-  const { cart, refresh } = useCart();
+  const { items, total: itemsTotal, isGuest, clear, refresh } = useCart();
+  const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [city, setCity] = useState("");
@@ -84,8 +85,6 @@ export function CheckoutScreen() {
   const shippingCost = SHIPPING_OPTIONS.find(
     (s) => s.value === shippingMethod,
   )!.cost;
-  const itemsTotal =
-    cart?.items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0) ?? 0;
   const total = itemsTotal + shippingCost;
 
   async function handlePlaceOrder() {
@@ -101,22 +100,50 @@ export function CheckoutScreen() {
       );
       return;
     }
+    if (isGuest && !email.trim()) {
+      Alert.alert(
+        "Missing info",
+        "Please enter your email so we can contact you about your order.",
+      );
+      return;
+    }
     setPlacing(true);
     try {
-      const order = await ordersApi.checkout({
-        fullName: fullName.trim(),
-        phone: phone.trim(),
-        city: city.trim(),
-        addressLine: addressLine.trim(),
-        notes: notes.trim() || undefined,
-        shippingMethod,
-        paymentMethod,
-        saveAsDefault,
-      });
+      const order = isGuest
+        ? await ordersApi.guestCheckout({
+            email: email.trim(),
+            fullName: fullName.trim(),
+            phone: phone.trim(),
+            city: city.trim(),
+            addressLine: addressLine.trim(),
+            notes: notes.trim() || undefined,
+            shippingMethod,
+            paymentMethod,
+            items: items.map((i) => ({
+              productId: i.productId,
+              quantity: i.quantity,
+            })),
+          })
+        : await ordersApi.checkout({
+            fullName: fullName.trim(),
+            phone: phone.trim(),
+            city: city.trim(),
+            addressLine: addressLine.trim(),
+            notes: notes.trim() || undefined,
+            shippingMethod,
+            paymentMethod,
+            saveAsDefault,
+          });
+      await clear();
       Alert.alert(
         "Order placed!",
         `Order #${order.id} — total ${formatCurrency(order.totalAmount)}`,
-        [{ text: "OK", onPress: () => router.replace("/orders") }],
+        [
+          {
+            text: "OK",
+            onPress: () => router.replace(isGuest ? "/(tabs)" : "/orders"),
+          },
+        ],
       );
     } catch (err: any) {
       Alert.alert(
@@ -140,6 +167,16 @@ export function CheckoutScreen() {
         value={fullName}
         onChangeText={setFullName}
       />
+      {isGuest && (
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+      )}
       <TextInput
         style={styles.input}
         placeholder="Phone (include +961)"
@@ -166,16 +203,17 @@ export function CheckoutScreen() {
         onChangeText={setNotes}
         multiline
       />
-
-      <Pressable
-        style={styles.checkboxRow}
-        onPress={() => setSaveAsDefault((v) => !v)}
-      >
-        <View
-          style={[styles.checkbox, saveAsDefault && styles.checkboxChecked]}
-        />
-        <Text style={styles.checkboxLabel}>Save this info for next time</Text>
-      </Pressable>
+      {!isGuest && (
+        <Pressable
+          style={styles.checkboxRow}
+          onPress={() => setSaveAsDefault((v) => !v)}
+        >
+          <View
+            style={[styles.checkbox, saveAsDefault && styles.checkboxChecked]}
+          />
+          <Text style={styles.checkboxLabel}>Save this info for next time</Text>
+        </Pressable>
+      )}
 
       <Text style={styles.section}>Shipping method</Text>
       {SHIPPING_OPTIONS.map((opt) => (

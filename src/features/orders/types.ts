@@ -50,3 +50,15 @@ export interface CheckoutPayload {
   paymentMethod: PaymentMethodType;
   saveAsDefault: boolean;
 }
+
+export interface GuestCheckoutPayload {
+  email: string;
+  fullName: string;
+  phone: string;
+  city: string;
+  addressLine: string;
+  notes?: string;
+  shippingMethod: ShippingMethodType;
+  paymentMethod: PaymentMethodType;
+  items: { productId: number; quantity: number }[];
+}

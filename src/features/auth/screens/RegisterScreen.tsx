@@ -16,8 +16,10 @@ export function RegisterScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [city, setCity] = useState("");
+  const [addressLine, setAddressLine] = useState("");
   const { register } = useAuth();
-
   async function handleRegister() {
     if (!fullName || !email || !password) {
       Alert.alert("Missing info", "Please fill in all fields.");
@@ -25,7 +27,14 @@ export function RegisterScreen() {
     }
     setLoading(true);
     try {
-      await register(email, password, fullName);
+      await register(
+        email,
+        password,
+        fullName,
+        phone || undefined,
+        city || undefined,
+        addressLine || undefined,
+      );
       router.replace("/(tabs)");
     } catch (err: any) {
       Alert.alert(
@@ -60,6 +69,28 @@ export function RegisterScreen() {
         secureTextEntry
         value={password}
         onChangeText={setPassword}
+      />
+      <Text style={styles.optionalLabel}>
+        Delivery info (optional — speeds up checkout later)
+      </Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Phone"
+        value={phone}
+        onChangeText={setPhone}
+        keyboardType="phone-pad"
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="City / Area"
+        value={city}
+        onChangeText={setCity}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Address"
+        value={addressLine}
+        onChangeText={setAddressLine}
       />
       <Pressable
         style={styles.button}
@@ -97,4 +128,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   buttonText: { color: "#fff", fontWeight: "600" },
+  optionalLabel: {
+    fontSize: 12,
+    color: "#888",
+    marginTop: 12,
+    marginBottom: 6,
+  },
 });
