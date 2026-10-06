@@ -1,3 +1,4 @@
+import { LoadingOverlay } from "@/shared/components/LoadingOverlay";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
@@ -48,9 +49,12 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
   const [images, setImages] = useState<{ id: number; thumbnailUrl: string }[]>(
     [],
   );
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [savedProductId, setSavedProductId] = useState<number | undefined>(
     productId,
   );
+
+  const isPersisted = savedProductId !== undefined; // true once a real row exists — from edit mode, OR from a create earlier in this same session
 
   useEffect(() => {
     catalogApi.getCategories().then(setCategories);
@@ -95,7 +99,7 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
       prev.map((a, i) => (i === index ? { ...a, [field]: text } : a)),
     );
   }
-  async function pickAndUploadImage() {
+  async function pickImage() {
     if (!savedProductId) {
       Alert.alert("Save first", "Save the product before adding photos.");
       return;
@@ -105,18 +109,28 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
       quality: 0.8,
     });
     if (result.canceled) return;
-    const updated = await adminApi.addImage(
-      savedProductId,
-      result.assets[0].uri,
-    );
-    setImages(
-      updated.images.map((img) => ({
-        id: img.id,
-        thumbnailUrl: img.thumbnailUrl,
-      })),
-    );
-  }
 
+    setUploadingImage(true);
+    try {
+      const updated = await adminApi.addImage(
+        savedProductId,
+        result.assets[0].uri,
+      );
+      setImages(
+        updated.images.map((img) => ({
+          id: img.id,
+          thumbnailUrl: img.thumbnailUrl,
+        })),
+      );
+    } catch (err: any) {
+      Alert.alert(
+        "Could not add photo",
+        err.response?.data?.message ?? "Please try again.",
+      );
+    } finally {
+      setUploadingImage(false);
+    }
+  }
   async function handleRemoveImage(imageId: number) {
     if (!savedProductId) return;
     const updated = await adminApi.removeImage(savedProductId, imageId);
@@ -128,6 +142,8 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
     );
   }
   async function handleSave() {
+    if (saving) return; // hard stop against a double-tap racing past the disabled prop before re-render
+
     if (!name.trim() || !price || !stock || categoryId === null) {
       Alert.alert(
         "Missing info",
@@ -159,14 +175,17 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
 
     setSaving(true);
     try {
-      const saved = isEdit
-        ? await adminApi.updateProduct(savedProductId!, payload)
-        : await adminApi.createProduct(payload);
-      setSavedProductId(saved.id);
-      if (!isEdit) {
-        Alert.alert("Product created", "You can now add photos below.");
-      } else {
+      if (isPersisted) {
+        // A row already exists — always update from here on, never create again
+        await adminApi.updateProduct(savedProductId!, payload);
         router.back();
+      } else {
+        const created = await adminApi.createProduct(payload);
+        setSavedProductId(created.id); // isPersisted flips to true right here — this is what actually prevents the duplicate
+        Alert.alert(
+          "Product created",
+          "Now add some photos, then tap Done when finished.",
+        );
       }
     } catch (err: any) {
       Alert.alert(
@@ -177,134 +196,151 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
       setSaving(false);
     }
   }
-
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={styles.label}>Photos</Text>
-      <View style={styles.gallery}>
-        {images.map((img) => (
-          <View key={img.id} style={styles.thumbWrap}>
-            <Image
-              source={{ uri: `${IMAGE_BASE_URL}${img.thumbnailUrl}` }}
-              style={styles.adminThumb}
+    <>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.label}>Photos</Text>
+        <View style={styles.gallery}>
+          {images.map((img) => (
+            <View key={img.id} style={styles.thumbWrap}>
+              <Image
+                source={{ uri: `${IMAGE_BASE_URL}${img.thumbnailUrl}` }}
+                style={styles.adminThumb}
+              />
+              <Pressable
+                style={styles.removeBadge}
+                onPress={() => handleRemoveImage(img.id)}
+              >
+                <Text style={styles.removeBadgeText}>✕</Text>
+              </Pressable>
+            </View>
+          ))}
+          <Pressable
+            style={styles.addThumb}
+            onPress={pickImage}
+            disabled={uploadingImage}
+          >
+            {uploadingImage ? (
+              <ActivityIndicator size="small" color="#888" />
+            ) : (
+              <Text style={{ fontSize: 24, color: "#888" }}>+</Text>
+            )}
+          </Pressable>
+        </View>
+        <Text style={styles.label}>Name</Text>
+        <TextInput style={styles.input} value={name} onChangeText={setName} />
+
+        <Text style={styles.label}>Description</Text>
+        <TextInput
+          style={[styles.input, { height: 80 }]}
+          value={description}
+          onChangeText={setDescription}
+          multiline
+        />
+
+        <View style={styles.row}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.label}>Price</Text>
+            <TextInput
+              style={styles.input}
+              value={price}
+              onChangeText={setPrice}
+              keyboardType="decimal-pad"
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.label}>Stock</Text>
+            <TextInput
+              style={styles.input}
+              value={stock}
+              onChangeText={setStock}
+              keyboardType="number-pad"
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.label}>Unit</Text>
+            <TextInput
+              style={styles.input}
+              value={unit}
+              onChangeText={setUnit}
+              autoCapitalize="none"
+            />
+          </View>
+        </View>
+
+        <Text style={styles.label}>Category</Text>
+        <View style={styles.chips}>
+          {categories.map((c) => (
+            <Pressable
+              key={c.id}
+              style={[styles.chip, categoryId === c.id && styles.chipActive]}
+              onPress={() => setCategoryId(c.id)}
+            >
+              <Text
+                style={
+                  categoryId === c.id ? styles.chipTextActive : styles.chipText
+                }
+              >
+                {c.name}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <Text style={styles.label}>Attributes (category-specific)</Text>
+        {attrs.map((a, i) => (
+          <View key={i} style={styles.attrRow}>
+            <TextInput
+              style={[styles.input, { flex: 1 }]}
+              placeholder="key"
+              value={a.key}
+              onChangeText={(t) => updateAttr(i, "key", t)}
+              autoCapitalize="none"
+            />
+            <TextInput
+              style={[styles.input, { flex: 1 }]}
+              placeholder="value"
+              value={a.value}
+              onChangeText={(t) => updateAttr(i, "value", t)}
+              autoCapitalize="none"
             />
             <Pressable
-              style={styles.removeBadge}
-              onPress={() => handleRemoveImage(img.id)}
+              onPress={() =>
+                setAttrs((prev) => prev.filter((_, idx) => idx !== i))
+              }
             >
-              <Text style={styles.removeBadgeText}>✕</Text>
+              <Text style={styles.remove}>✕</Text>
             </Pressable>
           </View>
         ))}
-        <Pressable style={styles.addThumb} onPress={pickAndUploadImage}>
-          <Text style={{ fontSize: 24, color: "#888" }}>+</Text>
+        <Pressable
+          onPress={() => setAttrs((prev) => [...prev, { key: "", value: "" }])}
+        >
+          <Text style={styles.addAttr}>+ Add attribute</Text>
         </Pressable>
-      </View>
-      <Text style={styles.label}>Name</Text>
-      <TextInput style={styles.input} value={name} onChangeText={setName} />
 
-      <Text style={styles.label}>Description</Text>
-      <TextInput
-        style={[styles.input, { height: 80 }]}
-        value={description}
-        onChangeText={setDescription}
-        multiline
+        <Pressable
+          style={styles.saveButton}
+          onPress={handleSave}
+          disabled={saving || uploadingImage}
+        >
+          <Text style={styles.saveText}>
+            {saving
+              ? "Saving..."
+              : isPersisted
+                ? "Save Changes"
+                : "Create Product"}
+          </Text>
+        </Pressable>
+      </ScrollView>
+      <LoadingOverlay
+        visible={saving}
+        message={isEdit ? "Saving changes..." : "Creating product..."}
       />
-
-      <View style={styles.row}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.label}>Price</Text>
-          <TextInput
-            style={styles.input}
-            value={price}
-            onChangeText={setPrice}
-            keyboardType="decimal-pad"
-          />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.label}>Stock</Text>
-          <TextInput
-            style={styles.input}
-            value={stock}
-            onChangeText={setStock}
-            keyboardType="number-pad"
-          />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.label}>Unit</Text>
-          <TextInput
-            style={styles.input}
-            value={unit}
-            onChangeText={setUnit}
-            autoCapitalize="none"
-          />
-        </View>
-      </View>
-
-      <Text style={styles.label}>Category</Text>
-      <View style={styles.chips}>
-        {categories.map((c) => (
-          <Pressable
-            key={c.id}
-            style={[styles.chip, categoryId === c.id && styles.chipActive]}
-            onPress={() => setCategoryId(c.id)}
-          >
-            <Text
-              style={
-                categoryId === c.id ? styles.chipTextActive : styles.chipText
-              }
-            >
-              {c.name}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <Text style={styles.label}>Attributes (category-specific)</Text>
-      {attrs.map((a, i) => (
-        <View key={i} style={styles.attrRow}>
-          <TextInput
-            style={[styles.input, { flex: 1 }]}
-            placeholder="key"
-            value={a.key}
-            onChangeText={(t) => updateAttr(i, "key", t)}
-            autoCapitalize="none"
-          />
-          <TextInput
-            style={[styles.input, { flex: 1 }]}
-            placeholder="value"
-            value={a.value}
-            onChangeText={(t) => updateAttr(i, "value", t)}
-            autoCapitalize="none"
-          />
-          <Pressable
-            onPress={() =>
-              setAttrs((prev) => prev.filter((_, idx) => idx !== i))
-            }
-          >
-            <Text style={styles.remove}>✕</Text>
-          </Pressable>
-        </View>
-      ))}
-      <Pressable
-        onPress={() => setAttrs((prev) => [...prev, { key: "", value: "" }])}
-      >
-        <Text style={styles.addAttr}>+ Add attribute</Text>
-      </Pressable>
-
-      <Pressable
-        style={styles.saveButton}
-        onPress={handleSave}
-        disabled={saving}
-      >
-        <Text style={styles.saveText}>
-          {saving ? "Saving..." : isEdit ? "Save Changes" : "Create Product"}
-        </Text>
-      </Pressable>
-    </ScrollView>
+    </>
   );
 }
 

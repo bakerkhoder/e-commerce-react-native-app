@@ -1,5 +1,6 @@
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { useCart } from "@/features/cart/context/CartContext";
+import { LoadingOverlay } from "@/shared/components/LoadingOverlay";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -88,6 +89,8 @@ export function CheckoutScreen() {
   const total = itemsTotal + shippingCost;
 
   async function handlePlaceOrder() {
+    if (placing) return;
+
     if (
       !fullName.trim() ||
       !phone.trim() ||
@@ -156,130 +159,135 @@ export function CheckoutScreen() {
   }
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={styles.section}>Delivery details</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Full name"
-        value={fullName}
-        onChangeText={setFullName}
-      />
-      {isGuest && (
+    <>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.section}>Delivery details</Text>
         <TextInput
           style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
+          placeholder="Full name"
+          value={fullName}
+          onChangeText={setFullName}
         />
-      )}
-      <TextInput
-        style={styles.input}
-        placeholder="Phone (include +961)"
-        value={phone}
-        onChangeText={setPhone}
-        keyboardType="phone-pad"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="City / Area (e.g. Akkar, Beirut)"
-        value={city}
-        onChangeText={setCity}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Address"
-        value={addressLine}
-        onChangeText={setAddressLine}
-      />
-      <TextInput
-        style={[styles.input, { height: 70 }]}
-        placeholder="Delivery notes (optional)"
-        value={notes}
-        onChangeText={setNotes}
-        multiline
-      />
-      {!isGuest && (
-        <Pressable
-          style={styles.checkboxRow}
-          onPress={() => setSaveAsDefault((v) => !v)}
-        >
-          <View
-            style={[styles.checkbox, saveAsDefault && styles.checkboxChecked]}
+        {isGuest && (
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
           />
-          <Text style={styles.checkboxLabel}>Save this info for next time</Text>
-        </Pressable>
-      )}
+        )}
+        <TextInput
+          style={styles.input}
+          placeholder="Phone (include +961)"
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="City / Area (e.g. Akkar, Beirut)"
+          value={city}
+          onChangeText={setCity}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Address"
+          value={addressLine}
+          onChangeText={setAddressLine}
+        />
+        <TextInput
+          style={[styles.input, { height: 70 }]}
+          placeholder="Delivery notes (optional)"
+          value={notes}
+          onChangeText={setNotes}
+          multiline
+        />
+        {!isGuest && (
+          <Pressable
+            style={styles.checkboxRow}
+            onPress={() => setSaveAsDefault((v) => !v)}
+          >
+            <View
+              style={[styles.checkbox, saveAsDefault && styles.checkboxChecked]}
+            />
+            <Text style={styles.checkboxLabel}>
+              Save this info for next time
+            </Text>
+          </Pressable>
+        )}
 
-      <Text style={styles.section}>Shipping method</Text>
-      {SHIPPING_OPTIONS.map((opt) => (
-        <Pressable
-          key={opt.value}
-          style={styles.optionRow}
-          onPress={() => setShippingMethod(opt.value)}
-        >
-          <View
-            style={[
-              styles.radio,
-              shippingMethod === opt.value && styles.radioActive,
-            ]}
-          />
-          <Text style={styles.optionLabel}>{opt.label}</Text>
-          <Text style={styles.optionCost}>{formatCurrency(opt.cost)}</Text>
-        </Pressable>
-      ))}
-
-      <Text style={styles.section}>Payment method</Text>
-      {PAYMENT_OPTIONS.map((opt) => (
-        <Pressable
-          key={opt.value}
-          style={styles.paymentCard}
-          onPress={() => setPaymentMethod(opt.value)}
-        >
-          <View style={styles.optionRow}>
+        <Text style={styles.section}>Shipping method</Text>
+        {SHIPPING_OPTIONS.map((opt) => (
+          <Pressable
+            key={opt.value}
+            style={styles.optionRow}
+            onPress={() => setShippingMethod(opt.value)}
+          >
             <View
               style={[
                 styles.radio,
-                paymentMethod === opt.value && styles.radioActive,
+                shippingMethod === opt.value && styles.radioActive,
               ]}
             />
             <Text style={styles.optionLabel}>{opt.label}</Text>
+            <Text style={styles.optionCost}>{formatCurrency(opt.cost)}</Text>
+          </Pressable>
+        ))}
+
+        <Text style={styles.section}>Payment method</Text>
+        {PAYMENT_OPTIONS.map((opt) => (
+          <Pressable
+            key={opt.value}
+            style={styles.paymentCard}
+            onPress={() => setPaymentMethod(opt.value)}
+          >
+            <View style={styles.optionRow}>
+              <View
+                style={[
+                  styles.radio,
+                  paymentMethod === opt.value && styles.radioActive,
+                ]}
+              />
+              <Text style={styles.optionLabel}>{opt.label}</Text>
+            </View>
+            {paymentMethod === opt.value && (
+              <Text style={styles.paymentNote}>{opt.note}</Text>
+            )}
+          </Pressable>
+        ))}
+
+        <View style={styles.summary}>
+          <View style={styles.summaryRow}>
+            <Text>Items</Text>
+            <Text>{formatCurrency(itemsTotal)}</Text>
           </View>
-          {paymentMethod === opt.value && (
-            <Text style={styles.paymentNote}>{opt.note}</Text>
-          )}
+          <View style={styles.summaryRow}>
+            <Text>Shipping</Text>
+            <Text>{formatCurrency(shippingCost)}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.totalLabel}>Total</Text>
+            <Text style={styles.totalLabel}>{formatCurrency(total)}</Text>
+          </View>
+        </View>
+
+        <Pressable
+          style={styles.placeButton}
+          onPress={handlePlaceOrder}
+          disabled={placing}
+        >
+          <Text style={styles.placeButtonText}>
+            {placing ? "Placing order..." : "Place Order"}
+          </Text>
         </Pressable>
-      ))}
-
-      <View style={styles.summary}>
-        <View style={styles.summaryRow}>
-          <Text>Items</Text>
-          <Text>{formatCurrency(itemsTotal)}</Text>
-        </View>
-        <View style={styles.summaryRow}>
-          <Text>Shipping</Text>
-          <Text>{formatCurrency(shippingCost)}</Text>
-        </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.totalLabel}>Total</Text>
-          <Text style={styles.totalLabel}>{formatCurrency(total)}</Text>
-        </View>
-      </View>
-
-      <Pressable
-        style={styles.placeButton}
-        onPress={handlePlaceOrder}
-        disabled={placing}
-      >
-        <Text style={styles.placeButtonText}>
-          {placing ? "Placing order..." : "Place Order"}
-        </Text>
-      </Pressable>
-    </ScrollView>
+      </ScrollView>
+      <LoadingOverlay visible={placing} message="Placing your order..." />
+    </>
   );
 }
 
