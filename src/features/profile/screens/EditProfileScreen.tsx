@@ -1,4 +1,5 @@
 import { PasswordInput } from "@/shared/components/PasswordInput";
+import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
 import { useState } from "react";
 import {
   Alert,
@@ -15,59 +16,44 @@ import { profileApi } from "../api/profileApi";
 export function EditProfileScreen() {
   const { user, updateUser } = useAuth();
   const [fullName, setFullName] = useState(user?.fullName ?? "");
-  const [savingProfile, setSavingProfile] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [savingPassword, setSavingPassword] = useState(false);
 
-  if (!user) {
-    return (
-      <View style={styles.center}>
-        <Text>Please log in first.</Text>
-      </View>
-    );
-  }
-
-  async function handleSaveProfile() {
-    if (!fullName.trim()) {
-      Alert.alert("Missing info", "Please enter your name.");
-      return;
-    }
-    setSavingProfile(true);
-    try {
+  const { run: handleSaveProfile, pending: savingProfile } = useAsyncAction(
+    async () => {
+      if (!fullName.trim()) {
+        Alert.alert("Missing info", "Please enter your name.");
+        return;
+      }
       const updated = await profileApi.updateProfile(fullName.trim());
       await updateUser(updated);
       Alert.alert("Saved", "Your profile was updated.");
-    } catch (err: any) {
-      Alert.alert(
-        "Could not save",
-        err.response?.data?.message ?? "Please try again.",
-      );
-    } finally {
-      setSavingProfile(false);
-    }
-  }
+    },
+    {
+      errorTitle: "Could not save",
+      fallbackMessage: "Please try again.",
+    },
+  );
 
-  async function handleChangePassword() {
-    if (!currentPassword || !newPassword) {
-      Alert.alert("Missing info", "Please fill in both password fields.");
-      return;
-    }
-    if (newPassword.length < 8) {
-      Alert.alert(
-        "Weak password",
-        "New password must be at least 8 characters.",
-      );
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      Alert.alert("Mismatch", "New password and confirmation do not match.");
-      return;
-    }
-    setSavingPassword(true);
-    try {
+  const { run: handleChangePassword, pending: savingPassword } = useAsyncAction(
+    async () => {
+      if (!currentPassword || !newPassword) {
+        Alert.alert("Missing info", "Please fill in both password fields.");
+        return;
+      }
+      if (newPassword.length < 8) {
+        Alert.alert(
+          "Weak password",
+          "New password must be at least 8 characters.",
+        );
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        Alert.alert("Mismatch", "New password and confirmation do not match.");
+        return;
+      }
       await profileApi.changePassword(currentPassword, newPassword);
       setCurrentPassword("");
       setNewPassword("");
@@ -76,14 +62,19 @@ export function EditProfileScreen() {
         "Password changed",
         "Use your new password next time you log in.",
       );
-    } catch (err: any) {
-      Alert.alert(
-        "Could not change password",
-        err.response?.data?.message ?? "Please try again.",
-      );
-    } finally {
-      setSavingPassword(false);
-    }
+    },
+    {
+      errorTitle: "Could not change password",
+      fallbackMessage: "Please try again.",
+    },
+  );
+
+  if (!user) {
+    return (
+      <View style={styles.center}>
+        <Text>Please log in first.</Text>
+      </View>
+    );
   }
 
   return (
@@ -106,7 +97,7 @@ export function EditProfileScreen() {
       />
       <Pressable
         style={styles.button}
-        onPress={handleSaveProfile}
+        onPress={() => handleSaveProfile()}
         disabled={savingProfile}
       >
         <Text style={styles.buttonText}>
@@ -137,7 +128,7 @@ export function EditProfileScreen() {
       />
       <Pressable
         style={styles.button}
-        onPress={handleChangePassword}
+        onPress={() => handleChangePassword()}
         disabled={savingPassword}
       >
         <Text style={styles.buttonText}>

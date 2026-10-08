@@ -1,4 +1,5 @@
 import { PasswordInput } from "@/shared/components/PasswordInput";
+import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -15,18 +16,17 @@ export function RegisterScreen() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
   const [phone, setPhone] = useState("");
   const [city, setCity] = useState("");
   const [addressLine, setAddressLine] = useState("");
   const { register } = useAuth();
-  async function handleRegister() {
-    if (!fullName || !email || !password) {
-      Alert.alert("Missing info", "Please fill in all fields.");
-      return;
-    }
-    setLoading(true);
-    try {
+
+  const { run: handleRegister, pending } = useAsyncAction(
+    async () => {
+      if (!fullName || !email || !password) {
+        Alert.alert("Missing info", "Please fill in all fields.");
+        return;
+      }
       await register(
         email,
         password,
@@ -36,15 +36,12 @@ export function RegisterScreen() {
         addressLine || undefined,
       );
       router.replace("/(tabs)");
-    } catch (err: any) {
-      Alert.alert(
-        "Registration failed",
-        err.response?.data?.message ?? "Please try again.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+    },
+    {
+      errorTitle: "Registration failed",
+      fallbackMessage: "Please try again.",
+    },
+  );
 
   return (
     <View style={styles.container}>
@@ -94,11 +91,11 @@ export function RegisterScreen() {
       />
       <Pressable
         style={styles.button}
-        onPress={handleRegister}
-        disabled={loading}
+        onPress={() => handleRegister()}
+        disabled={pending}
       >
         <Text style={styles.buttonText}>
-          {loading ? "Creating..." : "Create Account"}
+          {pending ? "Creating..." : "Create Account"}
         </Text>
       </Pressable>
     </View>

@@ -1,4 +1,5 @@
 import { PasswordInput } from "@/shared/components/PasswordInput";
+import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -14,28 +15,22 @@ import { useAuth } from "../context/AuthContext";
 export function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
 
-  async function handleLogin() {
-    if (!email || !password) {
-      Alert.alert("Missing info", "Please enter both email and password.");
-      return;
-    }
-    setLoading(true);
-    try {
+  const { run: handleLogin, pending } = useAsyncAction(
+    async () => {
+      if (!email || !password) {
+        Alert.alert("Missing info", "Please enter both email and password.");
+        return; // leaving early is fine, the hook still releases its lock
+      }
       await login(email, password);
       router.replace("/(tabs)");
-    } catch (err: any) {
-      Alert.alert(
-        "Login failed",
-        err.response?.data?.message ?? "Invalid email or password.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
+    },
+    {
+      errorTitle: "Login failed",
+      fallbackMessage: "Invalid email or password.",
+    },
+  );
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Welcome back</Text>
@@ -54,9 +49,13 @@ export function LoginScreen() {
         value={password}
         onChangeText={setPassword}
       />
-      <Pressable style={styles.button} onPress={handleLogin} disabled={loading}>
+      <Pressable
+        style={styles.button}
+        onPress={() => handleLogin()}
+        disabled={pending}
+      >
         <Text style={styles.buttonText}>
-          {loading ? "Logging in..." : "Log In"}
+          {pending ? "Logging in..." : "Log In"}
         </Text>
       </Pressable>
       <Pressable onPress={() => router.push("/auth/register")}>

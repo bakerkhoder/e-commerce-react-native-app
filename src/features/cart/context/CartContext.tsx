@@ -1,11 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
-    createContext,
-    ReactNode,
-    useCallback,
-    useContext,
-    useEffect,
-    useState,
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
 } from "react";
 import { useAuth } from "../../auth/context/AuthContext";
 import { Product } from "../../catalog/types";
@@ -51,6 +52,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartLine[]>([]);
   const [loading, setLoading] = useState(false);
   const isGuest = !user;
+  const busy = useRef(false);
 
   const saveGuestCart = useCallback(async (next: CartLine[]) => {
     setItems(next);
@@ -110,22 +112,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }
 
   async function updateQuantity(productId: number, quantity: number) {
-    if (user) {
-      const cart =
-        quantity <= 0
-          ? await cartApi.removeItem(productId)
-          : await cartApi.setQuantity(productId, quantity);
-      setItems(fromServerCart(cart.items));
-    } else {
-      const next =
-        quantity <= 0
-          ? items.filter((i) => i.productId !== productId)
-          : items.map((i) =>
-              i.productId === productId
-                ? { ...i, quantity: Math.min(quantity, i.maxStock) }
-                : i,
-            );
-      await saveGuestCart(next);
+    if (busy.current) return;
+    busy.current = true;
+    try {
+      if (user) {
+        const cart =
+          quantity <= 0
+            ? await cartApi.removeItem(productId)
+            : await cartApi.setQuantity(productId, quantity);
+        setItems(fromServerCart(cart.items));
+      } else {
+        const next =
+          quantity <= 0
+            ? items.filter((i) => i.productId !== productId)
+            : items.map((i) =>
+                i.productId === productId
+                  ? { ...i, quantity: Math.min(quantity, i.maxStock) }
+                  : i,
+              );
+        await saveGuestCart(next);
+      }
+    } finally {
+      busy.current = false;
     }
   }
 

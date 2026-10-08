@@ -1,11 +1,12 @@
+import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    FlatList,
-    Pressable,
-    StyleSheet,
-    Text,
-    View
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { Product } from "../../catalog/types";
 import { adminApi } from "../api/adminApi";
@@ -19,11 +20,17 @@ export function PendingApprovalsScreen() {
     }, []),
   );
 
-  async function handleDecision(id: number, approve: boolean) {
-    const action = approve ? adminApi.approve(id) : adminApi.reject(id);
-    await action;
-    setProducts((prev) => prev.filter((p) => p.id !== id));
-  }
+  const { run: handleDecision, pending } = useAsyncAction(
+    async (id: number, approve: boolean) => {
+      const action = approve ? adminApi.approve(id) : adminApi.reject(id);
+      await action;
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+    },
+    {
+      errorTitle: "Action failed",
+      fallbackMessage: "Could not update product.",
+    },
+  );
 
   return (
     <FlatList
@@ -41,14 +48,24 @@ export function PendingApprovalsScreen() {
           </Text>
           <View style={styles.row}>
             <Pressable
-              style={[styles.button, styles.approve]}
+              style={[
+                styles.button,
+                styles.approve,
+                pending && { opacity: 0.6 },
+              ]}
               onPress={() => handleDecision(item.id, true)}
+              disabled={pending}
             >
               <Text style={styles.buttonText}>Approve</Text>
             </Pressable>
             <Pressable
-              style={[styles.button, styles.reject]}
+              style={[
+                styles.button,
+                styles.reject,
+                pending && { opacity: 0.6 },
+              ]}
               onPress={() => handleDecision(item.id, false)}
+              disabled={pending}
             >
               <Text style={styles.buttonText}>Reject</Text>
             </Pressable>

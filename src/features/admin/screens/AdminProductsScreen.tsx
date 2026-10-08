@@ -1,4 +1,5 @@
 import { useAuth } from "@/features/auth/context/AuthContext";
+import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -26,16 +27,24 @@ export function AdminProductsScreen() {
     }, [user]),
   );
 
+  const { run: performDelete, pending: deleting } = useAsyncAction(
+    async (id: number) => {
+      await adminApi.deleteProduct(id);
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+    },
+    {
+      errorTitle: "Delete failed",
+      fallbackMessage: "Could not delete product.",
+    },
+  );
+
   function handleDelete(id: number) {
     Alert.alert("Delete product?", "This cannot be undone.", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
         style: "destructive",
-        onPress: async () => {
-          await adminApi.deleteProduct(id);
-          setProducts((prev) => prev.filter((p) => p.id !== id));
-        },
+        onPress: () => performDelete(id),
       },
     ]);
   }
@@ -65,8 +74,13 @@ export function AdminProductsScreen() {
             >
               <Text style={styles.edit}>Edit</Text>
             </Pressable>
-            <Pressable onPress={() => handleDelete(item.id)}>
-              <Text style={styles.delete}>Delete</Text>
+            <Pressable
+              onPress={() => handleDelete(item.id)}
+              disabled={deleting}
+            >
+              <Text style={[styles.delete, deleting && { opacity: 0.5 }]}>
+                Delete
+              </Text>
             </Pressable>
           </View>
         )}

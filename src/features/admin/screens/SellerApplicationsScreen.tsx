@@ -1,17 +1,17 @@
+import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    Alert,
-    FlatList,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { formatDate } from "../../../shared/utils/format";
 import {
-    SellerApplication,
-    sellerApplicationApi,
+  SellerApplication,
+  sellerApplicationApi,
 } from "../../profile/api/sellerApplicationApi";
 
 export function SellerApplicationsScreen() {
@@ -27,19 +27,18 @@ export function SellerApplicationsScreen() {
 
   useFocusEffect(load);
 
-  async function handleDecision(id: number, approve: boolean) {
-    try {
+  const { run: handleDecision, pending } = useAsyncAction(
+    async (id: number, approve: boolean) => {
       await (approve
         ? sellerApplicationApi.approve(id)
         : sellerApplicationApi.reject(id));
       setApplications((prev) => prev.filter((a) => a.id !== id));
-    } catch (err: any) {
-      Alert.alert(
-        "Could not process",
-        err.response?.data?.message ?? "Please try again.",
-      );
-    }
-  }
+    },
+    {
+      errorTitle: "Could not process",
+      fallbackMessage: "Please try again.",
+    },
+  );
 
   return (
     <FlatList
@@ -59,14 +58,24 @@ export function SellerApplicationsScreen() {
           </Text>
           <View style={styles.row}>
             <Pressable
-              style={[styles.button, styles.approve]}
+              style={[
+                styles.button,
+                styles.approve,
+                pending && { opacity: 0.6 },
+              ]}
               onPress={() => handleDecision(item.id, true)}
+              disabled={pending}
             >
               <Text style={styles.buttonText}>Approve</Text>
             </Pressable>
             <Pressable
-              style={[styles.button, styles.reject]}
+              style={[
+                styles.button,
+                styles.reject,
+                pending && { opacity: 0.6 },
+              ]}
               onPress={() => handleDecision(item.id, false)}
+              disabled={pending}
             >
               <Text style={styles.buttonText}>Reject</Text>
             </Pressable>

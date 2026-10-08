@@ -1,41 +1,37 @@
+import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    Alert,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { sellerApplicationApi } from "../api/sellerApplicationApi";
 
 export function BecomeSellerScreen() {
   const [businessName, setBusinessName] = useState("");
-  const [submitting, setSubmitting] = useState(false);
 
-  async function handleSubmit() {
-    if (!businessName.trim()) {
-      Alert.alert("Missing info", "Please enter a business name.");
-      return;
-    }
-    setSubmitting(true);
-    try {
+  const { run: handleSubmit, pending: submitting } = useAsyncAction(
+    async () => {
+      if (!businessName.trim()) {
+        Alert.alert("Missing info", "Please enter a business name.");
+        return;
+      }
       await sellerApplicationApi.apply(businessName.trim());
       Alert.alert(
         "Application submitted",
         "We'll review it and let you know once approved.",
       );
       router.back();
-    } catch (err: any) {
-      Alert.alert(
-        "Could not submit",
-        err.response?.data?.message ?? "Please try again.",
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  }
+    },
+    {
+      errorTitle: "Could not submit",
+      fallbackMessage: "Please try again.",
+    },
+  );
 
   return (
     <View style={styles.container}>
@@ -51,7 +47,7 @@ export function BecomeSellerScreen() {
       />
       <Pressable
         style={styles.button}
-        onPress={handleSubmit}
+        onPress={() => handleSubmit()}
         disabled={submitting}
       >
         <Text style={styles.buttonText}>

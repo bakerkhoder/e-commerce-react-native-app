@@ -1,13 +1,14 @@
+import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    Alert,
-    FlatList,
-    Linking,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
+  Alert,
+  FlatList,
+  Linking,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { formatCurrency, formatDate } from "../../../shared/utils/format";
 import { ordersApi } from "../../orders/api/ordersApi";
@@ -40,14 +41,33 @@ export function AdminOrdersScreen() {
     }, []),
   );
 
-  async function advanceStatus(order: Order) {
-    const next = NEXT_STATUS[order.status];
-    if (!next) return;
-    const updated = await ordersApi.updateStatus(order.id, next);
-    setOrders((prev) => prev.map((o) => (o.id === order.id ? updated : o)));
-  }
+  const { run: advanceStatus, pending: advancing } = useAsyncAction(
+    async (order: Order) => {
+      const next = NEXT_STATUS[order.status];
+      if (!next) return;
+      const updated = await ordersApi.updateStatus(order.id, next);
+      setOrders((prev) => prev.map((o) => (o.id === order.id ? updated : o)));
+    },
+    {
+      errorTitle: "Status update failed",
+      fallbackMessage: "Could not advance order status.",
+    },
+  );
 
-  async function cancelOrder(order: Order) {
+  const { run: performCancel, pending: cancelling } = useAsyncAction(
+    async (order: Order) => {
+      const updated = await ordersApi.updateStatus(order.id, "CANCELLED");
+      setOrders((prev) =>
+        prev.map((o) => (o.id === order.id ? updated : o)),
+      );
+    },
+    {
+      errorTitle: "Cancellation failed",
+      fallbackMessage: "Could not cancel order.",
+    },
+  );
+
+  function cancelOrder(order: Order) {
     Alert.alert(
       "Cancel order?",
       `Order #${order.id} will be marked cancelled.`,
@@ -56,16 +76,13 @@ export function AdminOrdersScreen() {
         {
           text: "Yes, cancel",
           style: "destructive",
-          onPress: async () => {
-            const updated = await ordersApi.updateStatus(order.id, "CANCELLED");
-            setOrders((prev) =>
-              prev.map((o) => (o.id === order.id ? updated : o)),
-            );
-          },
+          onPress: () => performCancel(order),
         },
       ],
     );
   }
+
+  const busy = advancing || cancelling;
 
   return (
     <FlatList
@@ -102,16 +119,24 @@ export function AdminOrdersScreen() {
               </Pressable>
               {next && (
                 <Pressable
-                  style={styles.advance}
+                  style={[
+                    styles.advance,
+                    busy && { opacity: 0.6 },
+                  ]}
                   onPress={() => advanceStatus(item)}
+                  disabled={busy}
                 >
                   <Text style={styles.actionText}>Mark {next}</Text>
                 </Pressable>
               )}
               {item.status !== "CANCELLED" && item.status !== "DELIVERED" && (
                 <Pressable
-                  style={styles.cancel}
+                  style={[
+                    styles.cancel,
+                    busy && { opacity: 0.6 },
+                  ]}
                   onPress={() => cancelOrder(item)}
+                  disabled={busy}
                 >
                   <Text style={styles.actionText}>Cancel</Text>
                 </Pressable>
