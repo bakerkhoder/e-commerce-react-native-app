@@ -35,6 +35,14 @@ export default function RootLayout() {
               options={{ headerShown: true, title: "Product" }}
             />
             <Stack.Screen
+              name="manage/dashboard"
+              options={{ headerShown: true, title: "Dashboard" }}
+            />
+            <Stack.Screen
+              name="manage/record"
+              options={{ headerShown: true, title: "Record Entry" }}
+            />
+            <Stack.Screen
               name="orders/index"
               options={{ headerShown: true, title: "My Orders" }}
             />

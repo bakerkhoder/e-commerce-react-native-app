@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { catalogApi } from "../../features/catalog/api/catalogApi";
 import { Product } from "../../features/catalog/types";
+import { analyticsApi } from "../../features/dashboard/api/dashboardApi";
 
 /** Matches the backend cap; the stepper must never offer a quantity the API rejects. */
 const MAX_QUANTITY = 99;
@@ -41,6 +42,12 @@ export default function ProductDetail() {
       .getProduct(Number(id))
       .then(setProduct)
       .catch(() => setProduct(null));
+  }, [id]);
+
+  // Fire-and-forget view ping. This is the customer-facing page, so a seller editing the
+  // product elsewhere never counts as a view.
+  useEffect(() => {
+    if (id) analyticsApi.recordView(Number(id));
   }, [id]);
 
   // async function handleAddToCart() {

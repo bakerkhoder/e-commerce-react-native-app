@@ -36,6 +36,12 @@ export default function ProfileTab() {
       </View>
 
       <MenuRow label="My Orders" onPress={() => router.push("/orders")} />
+      {(user.role === "ADMIN" || user.role === "SELLER") && (
+        <MenuRow
+          label="Dashboard"
+          onPress={() => router.push("/manage/dashboard")}
+        />
+      )}
       <MenuRow
         label="Edit Profile"
         onPress={() => router.push("/account/edit")}
