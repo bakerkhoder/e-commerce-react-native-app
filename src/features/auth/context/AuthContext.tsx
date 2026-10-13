@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { authApi } from "../api/authApi";
+import { tokenStorage } from "../../../shared/storage/tokenStorage";
 import { Role, User } from "../types";
 
 interface AuthContextValue {
@@ -31,12 +32,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // On app start, check if a token/user was already saved from a previous session
+  // On app start, restore the session. The token comes from the OS keystore, so if it
+  // is gone the cached user object is stale and we drop it rather than showing a
+  // logged-in shell whose every request would 401.
   useEffect(() => {
-    AsyncStorage.getItem("authUser").then((stored) => {
-      if (stored) setUser(JSON.parse(stored));
-      setIsLoading(false);
-    });
+    Promise.all([AsyncStorage.getItem("authUser"), tokenStorage.get()]).then(
+      ([stored, token]) => {
+        if (stored && token) {
+          setUser(JSON.parse(stored));
+        } else if (stored) {
+          AsyncStorage.removeItem("authUser");
+        }
+        setIsLoading(false);
+      },
+    );
   }, []);
 
   async function persistSession(response: {
@@ -52,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       fullName: response.fullName,
       role: response.role,
     };
-    await AsyncStorage.setItem("authToken", response.token);
+    await tokenStorage.set(response.token);
     await AsyncStorage.setItem("authUser", JSON.stringify(loggedInUser));
     setUser(loggedInUser);
   }
@@ -82,7 +91,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
-    await AsyncStorage.multiRemove(["authToken", "authUser"]);
+    await tokenStorage.clear();
+    // the cached user object is not secret, so it stays in AsyncStorage
+    await AsyncStorage.removeItem("authUser");
     setUser(null);
   }
   // 2) next to logout():

@@ -1,3 +1,4 @@
+import { MAX_FULL_NAME } from "@/shared/constants/limits";
 import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -44,6 +45,7 @@ export function BecomeSellerScreen() {
         placeholder="Business name"
         value={businessName}
         onChangeText={setBusinessName}
+        maxLength={MAX_FULL_NAME}
       />
       <Pressable
         style={styles.button}

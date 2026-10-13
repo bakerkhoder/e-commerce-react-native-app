@@ -13,6 +13,15 @@ import {
   View,
 } from "react-native";
 import { formatCurrency } from "../../../shared/utils/format";
+import { apiErrorMessage } from "../../../shared/utils/apiError";
+import {
+  MAX_ADDRESS,
+  MAX_CITY,
+  MAX_EMAIL,
+  MAX_FULL_NAME,
+  MAX_NOTES,
+  MAX_PHONE,
+} from "../../../shared/constants/limits";
 import { profileApi } from "../../profile/api/profileApi";
 import { ordersApi } from "../api/ordersApi";
 import { PaymentMethodType, ShippingMethodType } from "../types";
@@ -149,10 +158,7 @@ export function CheckoutScreen() {
         ],
       );
     } catch (err: any) {
-      Alert.alert(
-        "Checkout failed",
-        err.response?.data?.message ?? "Please try again.",
-      );
+      Alert.alert("Checkout failed", apiErrorMessage(err));
     } finally {
       setPlacing(false);
     }
@@ -170,6 +176,7 @@ export function CheckoutScreen() {
           placeholder="Full name"
           value={fullName}
           onChangeText={setFullName}
+          maxLength={MAX_FULL_NAME}
         />
         {isGuest && (
           <TextInput
@@ -179,6 +186,7 @@ export function CheckoutScreen() {
             onChangeText={setEmail}
             autoCapitalize="none"
             keyboardType="email-address"
+            maxLength={MAX_EMAIL}
           />
         )}
         <TextInput
@@ -187,18 +195,21 @@ export function CheckoutScreen() {
           value={phone}
           onChangeText={setPhone}
           keyboardType="phone-pad"
+          maxLength={MAX_PHONE}
         />
         <TextInput
           style={styles.input}
           placeholder="City / Area (e.g. Akkar, Beirut)"
           value={city}
           onChangeText={setCity}
+          maxLength={MAX_CITY}
         />
         <TextInput
           style={styles.input}
           placeholder="Address"
           value={addressLine}
           onChangeText={setAddressLine}
+          maxLength={MAX_ADDRESS}
         />
         <TextInput
           style={[styles.input, { height: 70 }]}
@@ -206,6 +217,7 @@ export function CheckoutScreen() {
           value={notes}
           onChangeText={setNotes}
           multiline
+          maxLength={MAX_NOTES}
         />
         {!isGuest && (
           <Pressable

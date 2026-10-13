@@ -9,6 +9,8 @@ import {
     TextInput,
     View,
 } from "react-native";
+import { MAX_QUERY } from "../../../shared/constants/limits";
+import { apiErrorMessage } from "../../../shared/utils/apiError";
 import { assistantApi } from "../api/assistantApi";
 import { ChatMessage } from "../types";
 
@@ -39,13 +41,13 @@ export function AssistantScreen() {
         ...prev,
         { id: Date.now().toString() + "-r", role: "assistant", text: answer },
       ]);
-    } catch {
+    } catch (err) {
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString() + "-e",
           role: "assistant",
-          text: "Sorry, I couldn't process that right now.",
+          text: apiErrorMessage(err, "Sorry, I couldn't process that right now."),
         },
       ]);
     } finally {
@@ -86,6 +88,7 @@ export function AssistantScreen() {
           value={input}
           onChangeText={setInput}
           onSubmitEditing={handleSend}
+          maxLength={MAX_QUERY}
         />
         <Pressable
           style={styles.sendButton}

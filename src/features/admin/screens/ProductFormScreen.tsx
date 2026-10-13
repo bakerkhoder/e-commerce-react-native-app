@@ -1,4 +1,11 @@
 import { LoadingOverlay } from "@/shared/components/LoadingOverlay";
+import {
+  MAX_DESCRIPTION,
+  MAX_NAME,
+  MAX_PHOTOS,
+  MAX_UNIT,
+} from "@/shared/constants/limits";
+import { apiErrorMessage } from "@/shared/utils/apiError";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
@@ -104,6 +111,13 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
       Alert.alert("Save first", "Save the product before adding photos.");
       return;
     }
+    if (images.length >= MAX_PHOTOS) {
+      Alert.alert(
+        "Photo limit reached",
+        `A product can have at most ${MAX_PHOTOS} photos.`,
+      );
+      return;
+    }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       quality: 0.8,
@@ -123,23 +137,24 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
         })),
       );
     } catch (err: any) {
-      Alert.alert(
-        "Could not add photo",
-        err.response?.data?.message ?? "Please try again.",
-      );
+      Alert.alert("Could not add photo", apiErrorMessage(err));
     } finally {
       setUploadingImage(false);
     }
   }
   async function handleRemoveImage(imageId: number) {
     if (!savedProductId) return;
-    const updated = await adminApi.removeImage(savedProductId, imageId);
-    setImages(
-      updated.images.map((img) => ({
-        id: img.id,
-        thumbnailUrl: img.thumbnailUrl,
-      })),
-    );
+    try {
+      const updated = await adminApi.removeImage(savedProductId, imageId);
+      setImages(
+        updated.images.map((img) => ({
+          id: img.id,
+          thumbnailUrl: img.thumbnailUrl,
+        })),
+      );
+    } catch (err) {
+      Alert.alert("Could not remove photo", apiErrorMessage(err));
+    }
   }
   async function handleSave() {
     if (saving) return; // hard stop against a double-tap racing past the disabled prop before re-render
@@ -219,9 +234,12 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
             </View>
           ))}
           <Pressable
-            style={styles.addThumb}
+            style={[
+              styles.addThumb,
+              images.length >= MAX_PHOTOS && styles.addThumbDisabled,
+            ]}
             onPress={pickImage}
-            disabled={uploadingImage}
+            disabled={uploadingImage || images.length >= MAX_PHOTOS}
           >
             {uploadingImage ? (
               <ActivityIndicator size="small" color="#888" />
@@ -230,8 +248,16 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
             )}
           </Pressable>
         </View>
+        <Text style={styles.photoHint}>
+          {images.length}/{MAX_PHOTOS} photos
+        </Text>
         <Text style={styles.label}>Name</Text>
-        <TextInput style={styles.input} value={name} onChangeText={setName} />
+        <TextInput
+          style={styles.input}
+          value={name}
+          onChangeText={setName}
+          maxLength={MAX_NAME}
+        />
 
         <Text style={styles.label}>Description</Text>
         <TextInput
@@ -239,6 +265,7 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
           value={description}
           onChangeText={setDescription}
           multiline
+          maxLength={MAX_DESCRIPTION}
         />
 
         <View style={styles.row}>
@@ -258,6 +285,7 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
               value={stock}
               onChangeText={setStock}
               keyboardType="number-pad"
+              maxLength={7}
             />
           </View>
           <View style={{ flex: 1 }}>
@@ -267,6 +295,7 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
               value={unit}
               onChangeText={setUnit}
               autoCapitalize="none"
+              maxLength={MAX_UNIT}
             />
           </View>
         </View>
@@ -414,4 +443,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  addThumbDisabled: { opacity: 0.4 },
+  photoHint: { fontSize: 12, color: "#888", marginTop: 6 },
 });

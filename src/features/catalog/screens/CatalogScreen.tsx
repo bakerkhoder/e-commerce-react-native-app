@@ -12,6 +12,8 @@ import {
 import { catalogApi } from "../api/catalogApi";
 import { CategoryChips } from "../components/CategoryChips";
 import { ProductCard } from "../components/ProductCard";
+import { apiErrorMessage } from "../../../shared/utils/apiError";
+import { MAX_QUERY } from "../../../shared/constants/limits";
 import { Category, Product } from "../types";
 
 const DEBOUNCE_MS = 400;
@@ -24,6 +26,7 @@ export function CatalogScreen() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const queryRef = useRef("");
   const categoryRef = useRef<number | null>(null);
@@ -34,23 +37,34 @@ export function CatalogScreen() {
     catalogApi
       .getCategories()
       .then(setCategories)
-      .catch(() => {});
+      .catch(() => {
+        // category chips are optional chrome; the product list reports its own errors
+      });
   }, []);
 
   const load = useCallback(async (text: string, catId: number | null) => {
     const id = ++requestId.current;
     const term = text.trim();
-    const data = term
-      ? await catalogApi.search(term, catId ?? undefined)
-      : await catalogApi.getProducts(catId ?? undefined);
-    if (id === requestId.current) setProducts(data);
+    try {
+      const data = term
+        ? await catalogApi.search(term, catId ?? undefined)
+        : await catalogApi.getProducts(catId ?? undefined);
+      if (id === requestId.current) {
+        setProducts(data);
+        setError(null);
+      }
+    } catch (err) {
+      if (id === requestId.current) {
+        setError(apiErrorMessage(err, "Could not load products."));
+      }
+    }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
-      load(queryRef.current, categoryRef.current)
-        .catch(() => {})
-        .finally(() => setInitialLoading(false));
+      load(queryRef.current, categoryRef.current).finally(() =>
+        setInitialLoading(false),
+      );
     }, [load]),
   );
 
@@ -60,9 +74,7 @@ export function CatalogScreen() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       setSearching(true);
-      load(text, categoryRef.current)
-        .catch(() => {})
-        .finally(() => setSearching(false));
+      load(text, categoryRef.current).finally(() => setSearching(false));
     }, DEBOUNCE_MS);
   }
 
@@ -70,9 +82,7 @@ export function CatalogScreen() {
     setCategoryId(id);
     categoryRef.current = id;
     setSearching(true);
-    load(queryRef.current, id)
-      .catch(() => {})
-      .finally(() => setSearching(false));
+    load(queryRef.current, id).finally(() => setSearching(false));
   }
 
   async function handleRefresh() {
@@ -106,6 +116,7 @@ export function CatalogScreen() {
         value={query}
         onChangeText={handleQueryChange}
         autoCapitalize="none"
+        maxLength={MAX_QUERY}
       />
       <CategoryChips
         categories={categories}
@@ -113,6 +124,11 @@ export function CatalogScreen() {
         onSelect={handleCategorySelect}
       />
       {searching && <ActivityIndicator style={{ marginTop: 8 }} />}
+      {error && (
+        <Text style={styles.error} onPress={handleRefresh}>
+          {error} Tap to retry.
+        </Text>
+      )}
       <FlatList
         data={products}
         keyExtractor={(item) => item.id.toString()}
@@ -145,4 +161,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   empty: { textAlign: "center", color: "#888", marginTop: 40 },
+  error: {
+    textAlign: "center",
+    color: "#c0392b",
+    marginTop: 12,
+    paddingHorizontal: 16,
+    fontSize: 13,
+  },
 });

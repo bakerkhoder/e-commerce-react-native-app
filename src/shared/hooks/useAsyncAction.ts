@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Alert } from "react-native";
+import { apiErrorMessage } from "../utils/apiError";
 
 export function useAsyncAction<A extends unknown[]>(
   action: (...args: A) => Promise<void>,
@@ -17,9 +18,7 @@ export function useAsyncAction<A extends unknown[]>(
     } catch (err: any) {
       Alert.alert(
         options.errorTitle ?? "Something went wrong",
-        err?.response?.data?.message ??
-          options.fallbackMessage ??
-          "Please try again.",
+        apiErrorMessage(err, options.fallbackMessage),
       );
     } finally {
       locked.current = false;

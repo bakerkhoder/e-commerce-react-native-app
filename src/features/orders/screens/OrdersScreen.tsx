@@ -10,6 +10,7 @@ import {
     View,
 } from "react-native";
 import { formatCurrency, formatDate } from "../../../shared/utils/format";
+import { apiErrorMessage } from "../../../shared/utils/apiError";
 import { useAuth } from "../../auth/context/AuthContext";
 import { ordersApi } from "../api/ordersApi";
 import { OrderStatusBadge } from "../components/OrderStatusBadge";
@@ -26,8 +27,8 @@ export function OrdersScreen() {
     try {
       setError(null);
       setOrders(await ordersApi.getOrders());
-    } catch {
-      setError("Could not load your orders.");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Could not load your orders."));
     }
   }, []);
 

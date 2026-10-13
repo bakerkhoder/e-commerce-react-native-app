@@ -8,9 +8,15 @@ import {
   useRef,
   useState,
 } from "react";
+import { Alert } from "react-native";
 import { useAuth } from "../../auth/context/AuthContext";
 import { Product } from "../../catalog/types";
+import { showApiError } from "../../../shared/utils/apiError";
 import { cartApi } from "../api/cartApi";
+
+/** Matches the backend cap in CartService; keeps guest carts and the UI in step. */
+const MAX_QUANTITY = 99;
+const QUANTITY_MESSAGE = `Quantity must be between 1 and ${MAX_QUANTITY}`;
 
 export interface CartLine {
   productId: number;
@@ -44,7 +50,13 @@ function fromServerCart(
     quantity: number;
   }[],
 ): CartLine[] {
-  return items.map((i) => ({ ...i, thumbnailUrl: null, maxStock: 9999 }));
+  // maxStock drives the "+" stepper, so cap it at the backend limit instead of 9999:
+  // otherwise the UI happily offers a 100th unit and the server answers 400.
+  return items.map((i) => ({
+    ...i,
+    thumbnailUrl: null,
+    maxStock: MAX_QUANTITY,
+  }));
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -80,18 +92,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   async function addItem(product: Product, quantity: number) {
     if (user) {
-      const cart = await cartApi.addItem(product.id, quantity);
-      setItems(fromServerCart(cart.items));
+      try {
+        const cart = await cartApi.addItem(product.id, quantity);
+        setItems(fromServerCart(cart.items));
+      } catch (err) {
+        // Alerted here so no caller can turn a rejected restriction into an
+        // unhandled promise rejection.
+        showApiError(err, "Could not add item");
+      }
     } else {
       const existing = items.find((i) => i.productId === product.id);
+      const nextQuantity = (existing?.quantity ?? 0) + quantity;
+      if (nextQuantity < 1 || nextQuantity > MAX_QUANTITY) {
+        Alert.alert("Could not add item", QUANTITY_MESSAGE);
+        return;
+      }
       const next = existing
         ? items.map((i) =>
             i.productId === product.id
               ? {
                   ...i,
                   quantity: Math.min(
-                    i.quantity + quantity,
+                    nextQuantity,
                     product.stockQuantity,
+                    MAX_QUANTITY,
                   ),
                 }
               : i,
@@ -102,9 +126,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
               productId: product.id,
               productName: product.name,
               unitPrice: product.price,
-              quantity: Math.min(quantity, product.stockQuantity),
+              quantity: Math.min(
+                quantity,
+                product.stockQuantity,
+                MAX_QUANTITY,
+              ),
               thumbnailUrl: product.thumbnailUrl,
-              maxStock: product.stockQuantity,
+              maxStock: Math.min(product.stockQuantity, MAX_QUANTITY),
             },
           ];
       await saveGuestCart(next);
@@ -132,6 +160,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
               );
         await saveGuestCart(next);
       }
+    } catch (err) {
+      showApiError(err, "Could not update quantity");
     } finally {
       busy.current = false;
     }

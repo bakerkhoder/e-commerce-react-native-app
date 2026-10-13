@@ -1,4 +1,13 @@
 import { PasswordInput } from "@/shared/components/PasswordInput";
+import {
+  MAX_ADDRESS,
+  MAX_CITY,
+  MAX_EMAIL,
+  MAX_FULL_NAME,
+  MAX_PASSWORD,
+  MAX_PHONE,
+  MIN_PASSWORD,
+} from "@/shared/constants/limits";
 import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -27,8 +36,19 @@ export function RegisterScreen() {
         Alert.alert("Missing info", "Please fill in all fields.");
         return;
       }
+      if (password.length < MIN_PASSWORD) {
+        Alert.alert(
+          "Password too short",
+          `Use at least ${MIN_PASSWORD} characters.`,
+        );
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        Alert.alert("Invalid email", "Please enter a valid email address.");
+        return;
+      }
       await register(
-        email,
+        email.trim(),
         password,
         fullName,
         phone || undefined,
@@ -51,6 +71,7 @@ export function RegisterScreen() {
         placeholder="Full name"
         value={fullName}
         onChangeText={setFullName}
+        maxLength={MAX_FULL_NAME}
       />
       <TextInput
         style={styles.input}
@@ -59,6 +80,7 @@ export function RegisterScreen() {
         keyboardType="email-address"
         value={email}
         onChangeText={setEmail}
+        maxLength={MAX_EMAIL}
       />
 
       <PasswordInput
@@ -66,7 +88,13 @@ export function RegisterScreen() {
         secureTextEntry
         value={password}
         onChangeText={setPassword}
+        maxLength={MAX_PASSWORD}
       />
+      <Text style={styles.hint}>
+        {password.length < MIN_PASSWORD
+          ? `At least ${MIN_PASSWORD} characters`
+          : " "}
+      </Text>
       <Text style={styles.optionalLabel}>
         Delivery info (optional — speeds up checkout later)
       </Text>
@@ -76,18 +104,21 @@ export function RegisterScreen() {
         value={phone}
         onChangeText={setPhone}
         keyboardType="phone-pad"
+        maxLength={MAX_PHONE}
       />
       <TextInput
         style={styles.input}
         placeholder="City / Area"
         value={city}
         onChangeText={setCity}
+        maxLength={MAX_CITY}
       />
       <TextInput
         style={styles.input}
         placeholder="Address"
         value={addressLine}
         onChangeText={setAddressLine}
+        maxLength={MAX_ADDRESS}
       />
       <Pressable
         style={styles.button}
@@ -131,4 +162,5 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 6,
   },
+  hint: { fontSize: 12, color: "#888", marginBottom: 4 },
 });

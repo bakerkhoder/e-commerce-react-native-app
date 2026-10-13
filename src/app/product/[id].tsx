@@ -1,5 +1,6 @@
 import { useCart } from "@/features/cart/context/CartContext";
 import { ProductGallery } from "@/features/catalog/components/ProductGallery";
+import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -9,25 +10,32 @@ import {
   Text,
   View,
 } from "react-native";
-import { useAuth } from "../../features/auth/context/AuthContext";
 import { catalogApi } from "../../features/catalog/api/catalogApi";
 import { Product } from "../../features/catalog/types";
 
+/** Matches the backend cap; the stepper must never offer a quantity the API rejects. */
+const MAX_QUANTITY = 99;
+
 export default function ProductDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
-  const [adding, setAdding] = useState(false);
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
 
-  async function handleAddToCart() {
-    if (!product) return;
-    await addItem(product, quantity);
-    setJustAdded(true);
-    setTimeout(() => setJustAdded(false), 2000);
-  }
+  // Never let the picker exceed either the stock on hand or the server's 99 cap.
+  const maxQty = Math.min(product?.stockQuantity ?? 1, MAX_QUANTITY);
+
+  const { run: handleAddToCart, pending: adding } = useAsyncAction(
+    async () => {
+      if (!product) return;
+      await addItem(product, quantity);
+      setJustAdded(true);
+      setTimeout(() => setJustAdded(false), 2000);
+    },
+    { errorTitle: "Could not add to cart" },
+  );
+
   useEffect(() => {
     catalogApi
       .getProduct(Number(id))
@@ -80,35 +88,40 @@ export default function ProductDetail() {
       <Text style={styles.stock}>{product.stockQuantity} in stock</Text>
       <View style={styles.qtyRow}>
         <Pressable
-          style={styles.qtyBtn}
+          style={[styles.qtyBtn, quantity <= 1 && styles.qtyBtnDisabled]}
           onPress={() => setQuantity((q) => Math.max(1, q - 1))}
+          disabled={quantity <= 1}
         >
           <Text style={styles.qtyBtnText}>−</Text>
         </Pressable>
         <Text style={styles.qtyValue}>{quantity}</Text>
         <Pressable
-          style={[
-            styles.qtyBtn,
-            quantity >= product.stockQuantity && styles.qtyBtnDisabled,
-          ]}
-          onPress={() =>
-            quantity < product.stockQuantity && setQuantity((q) => q + 1)
-          }
+          style={[styles.qtyBtn, quantity >= maxQty && styles.qtyBtnDisabled]}
+          onPress={() => quantity < maxQty && setQuantity((q) => q + 1)}
+          disabled={quantity >= maxQty}
         >
           <Text style={styles.qtyBtnText}>+</Text>
         </Pressable>
-        <Text style={styles.stockHint}>{product.stockQuantity} available</Text>
+        <Text style={styles.stockHint}>
+          {product.stockQuantity > MAX_QUANTITY
+            ? `${maxQty} max per order`
+            : `${product.stockQuantity} available`}
+        </Text>
       </View>
       <Pressable
         style={[
           styles.button,
           product.stockQuantity === 0 && styles.buttonDisabled,
         ]}
-        onPress={handleAddToCart}
-        disabled={product.stockQuantity === 0}
+        onPress={() => handleAddToCart()}
+        disabled={product.stockQuantity === 0 || adding}
       >
         <Text style={styles.buttonText}>
-          {product.stockQuantity === 0 ? "Out of Stock" : "Add to Cart"}
+          {product.stockQuantity === 0
+            ? "Out of Stock"
+            : adding
+              ? "Adding…"
+              : "Add to Cart"}
         </Text>
       </Pressable>
       {justAdded && (

@@ -1,4 +1,5 @@
 import { PasswordInput } from "@/shared/components/PasswordInput";
+import { MAX_EMAIL, MAX_PASSWORD } from "@/shared/constants/limits";
 import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -41,6 +42,7 @@ export function LoginScreen() {
         keyboardType="email-address"
         value={email}
         onChangeText={setEmail}
+        maxLength={MAX_EMAIL}
       />
 
       <PasswordInput
@@ -48,6 +50,7 @@ export function LoginScreen() {
         secureTextEntry
         value={password}
         onChangeText={setPassword}
+        maxLength={MAX_PASSWORD}
       />
       <Pressable
         style={styles.button}

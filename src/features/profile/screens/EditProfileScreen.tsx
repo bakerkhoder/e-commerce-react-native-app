@@ -1,4 +1,9 @@
 import { PasswordInput } from "@/shared/components/PasswordInput";
+import {
+  MAX_FULL_NAME,
+  MAX_PASSWORD,
+  MIN_PASSWORD,
+} from "@/shared/constants/limits";
 import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
 import { useState } from "react";
 import {
@@ -43,10 +48,17 @@ export function EditProfileScreen() {
         Alert.alert("Missing info", "Please fill in both password fields.");
         return;
       }
-      if (newPassword.length < 8) {
+      if (newPassword.length < MIN_PASSWORD) {
         Alert.alert(
           "Weak password",
-          "New password must be at least 8 characters.",
+          `New password must be at least ${MIN_PASSWORD} characters.`,
+        );
+        return;
+      }
+      if (newPassword.length > MAX_PASSWORD) {
+        Alert.alert(
+          "Password too long",
+          `New password must be at most ${MAX_PASSWORD} characters.`,
         );
         return;
       }
@@ -94,6 +106,7 @@ export function EditProfileScreen() {
         style={styles.input}
         value={fullName}
         onChangeText={setFullName}
+        maxLength={MAX_FULL_NAME}
       />
       <Pressable
         style={styles.button}
@@ -118,6 +131,7 @@ export function EditProfileScreen() {
         placeholder="New password (min 8 characters)"
         value={newPassword}
         onChangeText={setNewPassword}
+        maxLength={MAX_PASSWORD}
       />
       <TextInput
         style={[styles.input, { marginTop: 10 }]}
@@ -125,6 +139,7 @@ export function EditProfileScreen() {
         secureTextEntry
         value={confirmPassword}
         onChangeText={setConfirmPassword}
+        maxLength={MAX_PASSWORD}
       />
       <Pressable
         style={styles.button}
