@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  View,
 } from "react-native";
-import { formatCurrency, formatDate } from "../../../shared/utils/format";
+import { Feather } from "@expo/vector-icons";
+import { formatCurrency, formatDate } from "@/shared/utils/format";
+import { AppText } from "@/shared/components/AppText";
+import { EmptyState } from "@/shared/components/EmptyState";
+import { colors, radius, space } from "@/shared/theme";
 import { ordersApi } from "../api/ordersApi";
 import { OrderStatusBadge } from "../components/OrderStatusBadge";
 import { Order } from "../types";
@@ -23,78 +26,155 @@ export function OrderDetailScreen({ orderId }: { orderId: number }) {
       .finally(() => setLoading(false));
   }, [orderId]);
 
-  if (loading)
+  if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator />
+      <View style={s.center}>
+        <ActivityIndicator color={colors.sea} />
       </View>
     );
-  if (!order)
+  }
+
+  if (!order) {
     return (
-      <View style={styles.center}>
-        <Text>Order not found.</Text>
-      </View>
+      <EmptyState
+        icon="alert-circle"
+        title="Order not found"
+        message="It may have been removed, or the link is out of date."
+      />
     );
+  }
+
+  const itemsTotal = order.items.reduce(
+    (sum, i) => sum + i.unitPrice * i.quantity,
+    0,
+  );
+  const address = order.shippingAddress;
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Order #{order.id}</Text>
-        <OrderStatusBadge status={order.status} />
+    <ScrollView contentContainerStyle={s.wrap}>
+      <View style={s.card}>
+        <View style={s.rowBetween}>
+          <AppText variant="title">Order #{order.id}</AppText>
+          <OrderStatusBadge status={order.status} />
+        </View>
+        <AppText variant="small" color={colors.muted}>
+          Placed {formatDate(order.createdAt)}
+        </AppText>
       </View>
-      <Text style={styles.meta}>Placed {formatDate(order.createdAt)}</Text>
 
-      <View style={styles.items}>
-        {order.items.map((item) => (
-          <View key={item.productId} style={styles.itemRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.itemName}>{item.productName}</Text>
-              <Text style={styles.meta}>
-                {item.quantity} × {formatCurrency(item.unitPrice)}
-              </Text>
+      <AppText variant="heading" style={s.section}>
+        Items
+      </AppText>
+      <View style={s.card}>
+        {order.items.map((item, idx) => (
+          <View key={item.productId}>
+            {idx > 0 && <View style={s.divider} />}
+            <View style={s.itemRow}>
+              <View style={{ flex: 1 }}>
+                <AppText variant="heading">{item.productName}</AppText>
+                <AppText variant="small" color={colors.muted}>
+                  {item.quantity} × {formatCurrency(item.unitPrice)}
+                </AppText>
+              </View>
+              <AppText variant="price">
+                {formatCurrency(item.unitPrice * item.quantity)}
+              </AppText>
             </View>
-            <Text style={styles.itemTotal}>
-              {formatCurrency(item.unitPrice * item.quantity)}
-            </Text>
           </View>
         ))}
+
+        <View style={s.divider} />
+        <View style={s.totalLine}>
+          <AppText variant="small" color={colors.muted}>
+            Items
+          </AppText>
+          <AppText variant="small">{formatCurrency(itemsTotal)}</AppText>
+        </View>
+        <View style={s.totalLine}>
+          <AppText variant="small" color={colors.muted}>
+            Shipping
+          </AppText>
+          <AppText variant="small">
+            {formatCurrency(order.shippingCost)}
+          </AppText>
+        </View>
+        <View style={[s.divider, { marginTop: space.sm }]} />
+        <View style={s.totalLine}>
+          <AppText variant="heading">Total</AppText>
+          <AppText variant="price">{formatCurrency(order.totalAmount)}</AppText>
+        </View>
       </View>
 
-      <View style={styles.totalRow}>
-        <Text style={styles.totalLabel}>Total</Text>
-        <Text style={styles.totalValue}>
-          {formatCurrency(order.totalAmount)}
-        </Text>
-      </View>
+      {address && (
+        <>
+          <AppText variant="heading" style={s.section}>
+            Delivering to
+          </AppText>
+          <View style={s.card}>
+            <View style={s.addrRow}>
+              <Feather name="user" size={16} color={colors.muted} />
+              <AppText variant="small">{address.fullName}</AppText>
+            </View>
+            <View style={s.addrRow}>
+              <Feather name="phone" size={16} color={colors.muted} />
+              <AppText variant="small">{address.phone}</AppText>
+            </View>
+            <View style={s.addrRow}>
+              <Feather name="map-pin" size={16} color={colors.muted} />
+              <AppText variant="small" style={{ flex: 1 }}>
+                {[address.addressLine, address.city]
+                  .filter(Boolean)
+                  .join(", ")}
+              </AppText>
+            </View>
+            {!!address.notes && (
+              <View style={s.addrRow}>
+                <Feather name="edit-2" size={16} color={colors.muted} />
+                <AppText variant="small" color={colors.muted} style={{ flex: 1 }}>
+                  {address.notes}
+                </AppText>
+              </View>
+            )}
+          </View>
+        </>
+      )}
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  container: { padding: 20 },
-  header: {
+const s = StyleSheet.create({
+  center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  wrap: { padding: space.lg, paddingBottom: space.xxl, gap: space.xs },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.image,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+    padding: space.lg,
+    gap: 4,
+  },
+  rowBetween: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  title: { fontSize: 22, fontWeight: "700" },
-  meta: { fontSize: 13, color: "#777", marginTop: 2 },
-  items: { marginTop: 20 },
-  itemRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+  section: { marginTop: space.lg, marginBottom: space.xs },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.line,
+    marginVertical: space.md,
   },
-  itemName: { fontSize: 15, fontWeight: "600" },
-  itemTotal: { fontSize: 15, fontWeight: "500" },
-  totalRow: {
+  itemRow: { flexDirection: "row", alignItems: "center", gap: space.md },
+  totalLine: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 20,
+    alignItems: "center",
+    paddingVertical: 3,
   },
-  totalLabel: { fontSize: 18, fontWeight: "700" },
-  totalValue: { fontSize: 18, fontWeight: "700" },
+  addrRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.sm,
+    paddingVertical: 4,
+  },
 });

@@ -4,22 +4,24 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import { LoadingOverlay } from "../../../shared/components/LoadingOverlay";
-import { useAsyncAction } from "../../../shared/hooks/useAsyncAction";
-import { formatCurrency } from "../../../shared/utils/format";
+import { LoadingOverlay } from "@/shared/components/LoadingOverlay";
+import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
+import { formatCurrency } from "@/shared/utils/format";
+import { AppText } from "@/shared/components/AppText";
+import { Button } from "@/shared/components/Button";
+import { colors, radius, space } from "@/shared/theme";
 import { dashboardApi } from "../api/dashboardApi";
 import { BarChart } from "../components/BarChart";
 import { HBars } from "../components/HBars";
 import { Dashboard, InsightSeverity } from "../types";
 
 const SEVERITY_COLOR: Record<InsightSeverity, string> = {
-  WARNING: "#c0392b",
-  OPPORTUNITY: "#2563eb",
-  INFO: "#777",
+  WARNING: colors.tomato,
+  OPPORTUNITY: colors.sea,
+  INFO: colors.muted,
 };
 
 const SEVERITY_LABEL: Record<InsightSeverity, string> = {
@@ -85,42 +87,44 @@ export function DashboardScreen() {
                 setDays(d);
               }}
             >
-              <Text style={days === d ? s.chipTextActive : s.chipText}>
+              <AppText
+                variant="small"
+                style={days === d ? s.chipTextActive : s.chipText}
+              >
                 {d} days
-              </Text>
+              </AppText>
             </Pressable>
           ))}
         </View>
 
         <View style={s.chips}>
-          <Pressable
-            style={s.action}
+          <Button
+            label="Record purchase"
+            icon="plus"
             onPress={() =>
               router.push({
                 pathname: "/manage/record",
                 params: { type: "PURCHASE" },
               })
             }
-          >
-            <Text style={s.actionText}>+ Record purchase</Text>
-          </Pressable>
-          <Pressable
-            style={s.action}
+          />
+          <Button
+            label="Record sale"
+            icon="plus"
+            variant="secondary"
             onPress={() =>
               router.push({
                 pathname: "/manage/record",
                 params: { type: "SALE" },
               })
             }
-          >
-            <Text style={s.actionText}>+ Record sale</Text>
-          </Pressable>
+          />
         </View>
 
         {!data && !loading && (
-          <Text style={s.muted}>
+          <AppText variant="small" style={s.muted}>
             Nothing to show yet. Record a purchase or a sale to get started.
-          </Text>
+          </AppText>
         )}
 
         {data && k && (
@@ -128,24 +132,33 @@ export function DashboardScreen() {
             <View style={s.grid}>
               {cards.map(([label, value]) => (
                 <View key={label} style={s.card}>
-                  <Text style={s.cardLabel}>{label}</Text>
-                  <Text style={s.cardValue}>{value}</Text>
+                  <AppText variant="small" style={s.cardLabel}>
+                    {label}
+                  </AppText>
+                  <AppText variant="heading" style={s.cardValue}>
+                    {value}
+                  </AppText>
                 </View>
               ))}
             </View>
-            <Text
+            <AppText
+              variant="small"
               style={[
                 s.cash,
-                { color: k.netCashFlow >= 0 ? "#2f855a" : "#c0392b" },
+                { color: k.netCashFlow >= 0 ? colors.leaf : colors.tomato },
               ]}
             >
               Net cash flow: {formatCurrency(k.netCashFlow)}
-            </Text>
+            </AppText>
 
-            <Text style={s.section}>Revenue &amp; profit</Text>
+            <AppText variant="heading" style={s.section}>
+              Revenue &amp; profit
+            </AppText>
             <BarChart data={data.series} />
 
-            <Text style={s.section}>Top sellers</Text>
+            <AppText variant="heading" style={s.section}>
+              Top sellers
+            </AppText>
             <HBars
               rows={data.topProducts.map((p) => ({
                 label: p.name,
@@ -154,7 +167,9 @@ export function DashboardScreen() {
               }))}
             />
 
-            <Text style={s.section}>Most viewed</Text>
+            <AppText variant="heading" style={s.section}>
+              Most viewed
+            </AppText>
             <HBars
               rows={data.mostViewed.map((v) => ({
                 label: v.name,
@@ -165,31 +180,42 @@ export function DashboardScreen() {
 
             {data.lowStock.length > 0 && (
               <>
-                <Text style={s.section}>Low stock</Text>
+                <AppText variant="heading" style={s.section}>
+                  Low stock
+                </AppText>
                 {data.lowStock.map((p) => (
-                  <Text key={p.productId} style={s.line}>
+                  <AppText key={p.productId} variant="body" style={s.line}>
                     {p.name}: {p.stock} left
-                  </Text>
+                  </AppText>
                 ))}
               </>
             )}
 
-            <Text style={s.section}>Insights</Text>
+            <AppText variant="heading" style={s.section}>
+              Insights
+            </AppText>
             {data.insights.length === 0 && (
-              <Text style={s.muted}>
+              <AppText variant="small" style={s.muted}>
                 Nothing to flag yet. Insights appear as views and sales build up.
-              </Text>
+              </AppText>
             )}
             {data.insights.map((i, idx) => (
               <View
                 key={idx}
                 style={[s.insight, { borderLeftColor: SEVERITY_COLOR[i.severity] }]}
               >
-                <Text style={[s.insightKind, { color: SEVERITY_COLOR[i.severity] }]}>
+                <AppText
+                  variant="small"
+                  style={[s.insightKind, { color: SEVERITY_COLOR[i.severity] }]}
+                >
                   {SEVERITY_LABEL[i.severity]}
-                </Text>
-                <Text style={s.insightTitle}>{i.title}</Text>
-                <Text style={s.insightText}>{i.message}</Text>
+                </AppText>
+                <AppText variant="body" style={s.insightTitle}>
+                  {i.title}
+                </AppText>
+                <AppText variant="small" style={s.insightText}>
+                  {i.message}
+                </AppText>
               </View>
             ))}
 
@@ -198,17 +224,21 @@ export function DashboardScreen() {
               onPress={() => generatePlan()}
               disabled={planning}
             >
-              <Text style={s.actionText}>
+              <AppText variant="small" style={s.actionText}>
                 {planning ? "Thinking…" : "Generate AI action plan"}
-              </Text>
+              </AppText>
             </Pressable>
-            {plan && <Text style={s.plan}>{plan}</Text>}
+            {plan && (
+              <AppText variant="body" style={s.plan}>
+                {plan}
+              </AppText>
+            )}
 
-            <Text style={s.hint}>
+            <AppText variant="small" style={s.hint}>
               Revenue counts online orders marked Paid or later, plus sales you record
-              (shipping excluded). Profit uses each product's recorded cost. Views are
+              (shipping excluded). Profit uses each product&apos;s recorded cost. Views are
               counted when a customer opens a product page.
-            </Text>
+            </AppText>
           </>
         )}
       </ScrollView>
@@ -222,59 +252,53 @@ const s = StyleSheet.create({
   chips: { flexDirection: "row", gap: 8, marginBottom: 8 },
   chip: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: colors.line,
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 6,
   },
-  chipActive: { backgroundColor: "#111", borderColor: "#111" },
-  chipText: { color: "#333", fontSize: 13 },
-  chipTextActive: { color: "#fff", fontSize: 13, fontWeight: "600" },
-  action: {
-    backgroundColor: "#111",
-    borderRadius: 8,
-    paddingVertical: 9,
-    paddingHorizontal: 12,
-  },
-  actionText: { color: "#fff", fontWeight: "600", fontSize: 13 },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  chipActive: { backgroundColor: colors.ink, borderColor: colors.ink },
+  chipText: { color: colors.ink },
+  chipTextActive: { color: colors.onSea },
+  actionText: { color: colors.onSea },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   card: {
     width: "31%",
     flexGrow: 1,
-    backgroundColor: "#f5f5f5",
-    borderRadius: 10,
+    backgroundColor: colors.surface,
+    borderRadius: radius.input,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
     padding: 12,
   },
-  cardLabel: { fontSize: 11, color: "#777" },
-  cardValue: { fontSize: 16, fontWeight: "700", marginTop: 4 },
-  cash: { fontSize: 14, fontWeight: "600", marginTop: 4 },
-  section: { fontSize: 16, fontWeight: "700", marginTop: 20, marginBottom: 8 },
-  line: { fontSize: 14, paddingVertical: 2 },
-  muted: { color: "#888", fontSize: 13 },
+  cardLabel: { color: colors.muted },
+  cardValue: { marginTop: 4 },
+  cash: { marginTop: space.xs },
+  section: { marginTop: space.xl, marginBottom: space.sm },
+  line: { paddingVertical: 2 },
+  muted: { color: colors.muted },
   insight: {
     borderLeftWidth: 4,
-    backgroundColor: "#f8f8f8",
-    borderRadius: 6,
-    padding: 10,
-    marginBottom: 8,
+    backgroundColor: colors.surface,
+    borderRadius: radius.input,
+    padding: space.md,
+    marginBottom: space.sm,
   },
-  insightKind: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5 },
-  insightTitle: { fontSize: 14, fontWeight: "700", marginTop: 2 },
-  insightText: { fontSize: 13, color: "#555", marginTop: 2 },
+  insightKind: { letterSpacing: 0.5 },
+  insightTitle: { marginTop: 2 },
+  insightText: { color: colors.muted, marginTop: 2 },
   aiButton: {
-    backgroundColor: "#2563eb",
-    borderRadius: 8,
+    backgroundColor: colors.sea,
+    borderRadius: radius.button,
     padding: 12,
     alignItems: "center",
-    marginTop: 16,
+    marginTop: space.lg,
   },
   plan: {
-    backgroundColor: "#eef4ff",
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 10,
-    fontSize: 14,
-    lineHeight: 20,
+    backgroundColor: colors.seaSoft,
+    borderRadius: radius.input,
+    padding: space.md,
+    marginTop: space.sm,
   },
-  hint: { fontSize: 11, color: "#999", marginTop: 16 },
+  hint: { color: colors.muted, marginTop: space.lg },
 });

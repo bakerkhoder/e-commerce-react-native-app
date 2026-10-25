@@ -1,20 +1,23 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import { Image, StyleSheet, View } from "react-native";
 import { IMAGE_BASE_URL } from "../../api/client";
+import { colors, radius } from "../theme";
 
 export function ProductImage({
   url,
   size,
+  radius: r = radius.input,
 }: {
   url: string | null;
   size: number;
+  radius?: number;
 }) {
   // Handle local file URIs (e.g. from local device image picker)
   if (url && url.startsWith("file://")) {
     return (
       <Image
         source={{ uri: url }}
-        style={{ width: size, height: size, borderRadius: 8 }}
+        style={{ width: size, height: size, borderRadius: r }}
         resizeMode="cover"
       />
     );
@@ -22,8 +25,10 @@ export function ProductImage({
 
   if (!url) {
     return (
-      <View style={[styles.placeholder, { width: size, height: size }]}>
-        <Ionicons name="image-outline" size={size * 0.4} color="#bbb" />
+      <View
+        style={[styles.placeholder, { width: size, height: size, borderRadius: r }]}
+      >
+        <Feather name="image" size={size * 0.34} color={colors.muted} />
       </View>
     );
   }
@@ -31,7 +36,7 @@ export function ProductImage({
   return (
     <Image
       source={{ uri: `${IMAGE_BASE_URL}${url}` }}
-      style={{ width: size, height: size, borderRadius: 8 }}
+      style={{ width: size, height: size, borderRadius: r }}
       resizeMode="cover"
     />
   );
@@ -39,8 +44,7 @@ export function ProductImage({
 
 const styles = StyleSheet.create({
   placeholder: {
-    backgroundColor: "#eee",
-    borderRadius: 8,
+    backgroundColor: colors.chalk,
     justifyContent: "center",
     alignItems: "center",
   },

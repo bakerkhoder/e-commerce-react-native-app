@@ -1,58 +1,94 @@
-import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Category } from "../types";
+import { AppText } from "@/shared/components/AppText";
+import { aisle, colors, fonts, radius } from "@/shared/theme";
 
-interface Props {
+function Chip({
+  label,
+  active,
+  tone,
+  dot,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  tone: string;
+  dot?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      style={[s.chip, active && { backgroundColor: tone, borderColor: tone }]}
+    >
+      {dot && (
+        <View style={[s.dot, { backgroundColor: active ? "#fff" : tone }]} />
+      )}
+      <AppText
+        variant="small"
+        color={active ? "#fff" : colors.ink}
+        style={{ fontFamily: fonts.semibold }}
+      >
+        {label}
+      </AppText>
+    </Pressable>
+  );
+}
+
+export function CategoryChips({
+  categories,
+  selectedId,
+  onSelect,
+}: {
   categories: Category[];
   selectedId: number | null;
   onSelect: (id: number | null) => void;
-}
-
-export function CategoryChips({ categories, selectedId, onSelect }: Props) {
+}) {
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      style={styles.scroll}
-      contentContainerStyle={styles.row}
+      style={s.scroll}
+      contentContainerStyle={s.row}
     >
-      <Pressable
-        style={[styles.chip, selectedId === null && styles.chipActive]}
+      <Chip
+        label="All"
+        active={selectedId === null}
+        tone={colors.ink}
         onPress={() => onSelect(null)}
-      >
-        <Text style={selectedId === null ? styles.textActive : styles.text}>
-          All
-        </Text>
-      </Pressable>
+      />
       {categories.map((c) => (
-        <Pressable
+        <Chip
           key={c.id}
-          style={[styles.chip, selectedId === c.id && styles.chipActive]}
+          label={c.name}
+          dot
+          active={selectedId === c.id}
+          tone={aisle(c.id).tone}
           onPress={() => onSelect(selectedId === c.id ? null : c.id)}
-        >
-          <Text style={selectedId === c.id ? styles.textActive : styles.text}>
-            {c.name}
-          </Text>
-        </Pressable>
+        />
       ))}
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   // Fixing the ScrollView's own height is what actually prevents the stretch bug —
   // without this, a child's cross-axis size is ambiguous and can blow up unpredictably
-  scroll: { flexGrow: 0, height: 44 },
-  row: { alignItems: "center", paddingHorizontal: 16, gap: 8 },
+  scroll: { flexGrow: 0, height: 40 },
+  row: { gap: 8, alignItems: "center", paddingRight: 8 },
   chip: {
     flexShrink: 0, // never let a chip compress or expand to fill space
-    height: 32,
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 16,
+    height: 36,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     paddingHorizontal: 14,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    backgroundColor: colors.surface,
   },
-  chipActive: { backgroundColor: "#111", borderColor: "#111" },
-  text: { color: "#333", fontSize: 13 },
-  textActive: { color: "#fff", fontSize: 13, fontWeight: "600" },
+  dot: { width: 8, height: 8, borderRadius: 4 },
 });

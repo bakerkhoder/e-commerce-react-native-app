@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 import { authApi } from "../api/authApi";
-import { tokenStorage } from "../../../shared/storage/tokenStorage";
+import { tokenStorage } from "@/shared/storage/tokenStorage";
 import { Role, User } from "../types";
 
 interface AuthContextValue {

@@ -3,14 +3,22 @@ import { useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { IMAGE_BASE_URL } from "../../../api/client";
 import { ProductImage } from "../types";
+import { colors, radius } from "@/shared/theme";
 
-export function ProductGallery({ images }: { images: ProductImage[] }) {
+export function ProductGallery({
+  images,
+  tint = colors.chalk,
+}: {
+  images: ProductImage[];
+  /** Aisle tint behind the photo, so the page carries the category's colour. */
+  tint?: string;
+}) {
   const [activeIndex, setActiveIndex] = useState(0);
 
   if (images.length === 0) {
     return (
-      <View style={styles.mainPlaceholder}>
-        <Ionicons name="image-outline" size={64} color="#bbb" />
+      <View style={[styles.mainPlaceholder, { backgroundColor: tint }]}>
+        <Ionicons name="image-outline" size={64} color={colors.muted} />
       </View>
     );
   }
@@ -21,7 +29,7 @@ export function ProductGallery({ images }: { images: ProductImage[] }) {
     <View>
       <Image
         source={{ uri: `${IMAGE_BASE_URL}${active.imageUrl}` }}
-        style={styles.mainImage}
+        style={[styles.mainImage, { backgroundColor: tint }]}
         resizeMode="cover"
       />
       {images.length > 1 && (
@@ -46,11 +54,10 @@ export function ProductGallery({ images }: { images: ProductImage[] }) {
 }
 
 const styles = StyleSheet.create({
-  mainImage: { width: "100%", height: 300, backgroundColor: "#f2f2f2" },
+  mainImage: { width: "100%", height: 360 },
   mainPlaceholder: {
     width: "100%",
-    height: 300,
-    backgroundColor: "#f2f2f2",
+    height: 360,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -58,9 +65,9 @@ const styles = StyleSheet.create({
   thumb: {
     width: 60,
     height: 60,
-    borderRadius: 6,
+    borderRadius: radius.input,
     borderWidth: 2,
     borderColor: "transparent",
   },
-  thumbActive: { borderColor: "#111" },
+  thumbActive: { borderColor: colors.sea },
 });

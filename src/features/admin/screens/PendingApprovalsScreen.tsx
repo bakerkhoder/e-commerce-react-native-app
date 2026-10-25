@@ -1,13 +1,11 @@
-import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import {
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { FlatList, StyleSheet, View } from "react-native";
+import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
+import { AppText } from "@/shared/components/AppText";
+import { Button } from "@/shared/components/Button";
+import { EmptyState } from "@/shared/components/EmptyState";
+import { colors, radius, space } from "@/shared/theme";
 import { Product } from "../../catalog/types";
 import { adminApi } from "../api/adminApi";
 
@@ -22,53 +20,48 @@ export function PendingApprovalsScreen() {
 
   const { run: handleDecision, pending } = useAsyncAction(
     async (id: number, approve: boolean) => {
-      const action = approve ? adminApi.approve(id) : adminApi.reject(id);
-      await action;
+      await (approve ? adminApi.approve(id) : adminApi.reject(id));
       setProducts((prev) => prev.filter((p) => p.id !== id));
     },
-    {
-      errorTitle: "Action failed",
-      fallbackMessage: "Could not update product.",
-    },
+    { errorTitle: "Action failed" },
   );
+
+  if (products.length === 0) {
+    return (
+      <EmptyState
+        icon="check-square"
+        title="Nothing waiting"
+        message="New seller listings land here for you to approve or reject."
+      />
+    );
+  }
 
   return (
     <FlatList
       data={products}
       keyExtractor={(p) => p.id.toString()}
-      contentContainerStyle={{ padding: 16 }}
-      ListEmptyComponent={
-        <Text style={styles.empty}>No pending products.</Text>
-      }
+      contentContainerStyle={{ padding: space.lg, gap: space.md }}
       renderItem={({ item }) => (
-        <View style={styles.card}>
-          <Text style={styles.name}>{item.name}</Text>
-          <Text style={styles.meta}>
-            ${item.price.toFixed(2)} · seller #{item.sellerId}
-          </Text>
-          <View style={styles.row}>
-            <Pressable
-              style={[
-                styles.button,
-                styles.approve,
-                pending && { opacity: 0.6 },
-              ]}
+        <View style={s.card}>
+          <AppText variant="heading">{item.name}</AppText>
+          <AppText variant="small" color={colors.muted}>
+            ${item.price.toFixed(2)}, seller #{item.sellerId}
+          </AppText>
+          <View style={s.row}>
+            <Button
+              label="Approve"
+              icon="check"
+              loading={pending}
               onPress={() => handleDecision(item.id, true)}
+              style={{ flex: 1 }}
+            />
+            <Button
+              label="Reject"
+              variant="danger"
               disabled={pending}
-            >
-              <Text style={styles.buttonText}>Approve</Text>
-            </Pressable>
-            <Pressable
-              style={[
-                styles.button,
-                styles.reject,
-                pending && { opacity: 0.6 },
-              ]}
               onPress={() => handleDecision(item.id, false)}
-              disabled={pending}
-            >
-              <Text style={styles.buttonText}>Reject</Text>
-            </Pressable>
+              style={{ flex: 1 }}
+            />
           </View>
         </View>
       )}
@@ -76,25 +69,14 @@ export function PendingApprovalsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  empty: { textAlign: "center", color: "#888", marginTop: 40 },
+const s = StyleSheet.create({
   card: {
-    backgroundColor: "#f5f5f5",
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 12,
-    gap: 8,
+    backgroundColor: colors.surface,
+    borderRadius: radius.image,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+    padding: space.lg,
+    gap: space.sm,
   },
-  name: { fontSize: 16, fontWeight: "600" },
-  meta: { fontSize: 13, color: "#777" },
-  row: { flexDirection: "row", gap: 10, marginTop: 4 },
-  button: {
-    flex: 1,
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: "center",
-  },
-  approve: { backgroundColor: "#2f855a" },
-  reject: { backgroundColor: "#c0392b" },
-  buttonText: { color: "#fff", fontWeight: "600" },
+  row: { flexDirection: "row", gap: space.md, marginTop: space.xs },
 });

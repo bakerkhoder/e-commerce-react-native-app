@@ -1,7 +1,7 @@
+import { tokenStorage } from "@/shared/storage/tokenStorage";
 import axios from "axios";
-import { tokenStorage } from "../shared/storage/tokenStorage";
 
-export const API_ROOT = "http://192.168.0.102:8080"; // same host, no /api suffix
+export const API_ROOT = "http://192.168.0.107:8080"; // same host, no /api suffix
 export const IMAGE_BASE_URL = API_ROOT;
 const BASE_URL = `${API_ROOT}/api`;
 export const apiClient = axios.create({ baseURL: BASE_URL });

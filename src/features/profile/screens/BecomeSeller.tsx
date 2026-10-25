@@ -1,15 +1,12 @@
-import { MAX_FULL_NAME } from "@/shared/constants/limits";
-import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
 import { router } from "expo-router";
 import { useState } from "react";
-import {
-  Alert,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, ScrollView, StyleSheet } from "react-native";
+import { MAX_FULL_NAME } from "@/shared/constants/limits";
+import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
+import { AppText } from "@/shared/components/AppText";
+import { Button } from "@/shared/components/Button";
+import { Input } from "@/shared/components/Input";
+import { colors, space } from "@/shared/theme";
 import { sellerApplicationApi } from "../api/sellerApplicationApi";
 
 export function BecomeSellerScreen() {
@@ -28,54 +25,35 @@ export function BecomeSellerScreen() {
       );
       router.back();
     },
-    {
-      errorTitle: "Could not submit",
-      fallbackMessage: "Please try again.",
-    },
+    { errorTitle: "Could not submit" },
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Sell on our marketplace</Text>
-      <Text style={styles.subtitle}>
-        Tell us about your business to get started.
-      </Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Business name"
+    <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled">
+      <AppText variant="display">Sell with us</AppText>
+      <AppText color={colors.muted} style={{ marginBottom: space.xl }}>
+        Tell us the name you trade under. An admin reviews every application before
+        your products go live.
+      </AppText>
+
+      <Input
+        label="Business name"
+        icon="briefcase"
+        placeholder="e.g. Baladi Farm"
         value={businessName}
         onChangeText={setBusinessName}
         maxLength={MAX_FULL_NAME}
       />
-      <Pressable
-        style={styles.button}
+      <Button
+        label="Submit application"
+        loading={submitting}
         onPress={() => handleSubmit()}
-        disabled={submitting}
-      >
-        <Text style={styles.buttonText}>
-          {submitting ? "Submitting..." : "Submit Application"}
-        </Text>
-      </Pressable>
-    </View>
+        style={{ marginTop: space.sm }}
+      />
+    </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, justifyContent: "center" },
-  title: { fontSize: 22, fontWeight: "700", marginBottom: 8 },
-  subtitle: { fontSize: 14, color: "#666", marginBottom: 20 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  button: {
-    backgroundColor: "#111",
-    borderRadius: 8,
-    padding: 14,
-    alignItems: "center",
-  },
-  buttonText: { color: "#fff", fontWeight: "600" },
+const s = StyleSheet.create({
+  wrap: { flexGrow: 1, padding: space.xl, justifyContent: "center" },
 });

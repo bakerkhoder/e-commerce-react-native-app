@@ -1,3 +1,6 @@
+import { router } from "expo-router";
+import { useState } from "react";
+import { Alert, Pressable, ScrollView, StyleSheet } from "react-native";
 import { PasswordInput } from "@/shared/components/PasswordInput";
 import {
   MAX_ADDRESS,
@@ -9,16 +12,10 @@ import {
   MIN_PASSWORD,
 } from "@/shared/constants/limits";
 import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
-import { router } from "expo-router";
-import { useState } from "react";
-import {
-  Alert,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { AppText } from "@/shared/components/AppText";
+import { Button } from "@/shared/components/Button";
+import { Input } from "@/shared/components/Input";
+import { colors, fonts, space } from "@/shared/theme";
 import { useAuth } from "../context/AuthContext";
 
 export function RegisterScreen() {
@@ -64,103 +61,85 @@ export function RegisterScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Create account</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Full name"
+    <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled">
+      <AppText variant="display">Create account</AppText>
+      <AppText color={colors.muted} style={{ marginBottom: space.xl }}>
+        It takes a minute, and checkout gets faster afterwards.
+      </AppText>
+
+      <Input
+        label="Full name"
+        icon="user"
+        placeholder="Your name"
         value={fullName}
         onChangeText={setFullName}
         maxLength={MAX_FULL_NAME}
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
+      <Input
+        label="Email"
+        icon="mail"
+        placeholder="you@example.com"
         autoCapitalize="none"
         keyboardType="email-address"
         value={email}
         onChangeText={setEmail}
         maxLength={MAX_EMAIL}
       />
-
       <PasswordInput
-        placeholder="Password"
-        secureTextEntry
+        label="Password"
+        placeholder="At least 8 characters"
         value={password}
         onChangeText={setPassword}
         maxLength={MAX_PASSWORD}
       />
-      <Text style={styles.hint}>
-        {password.length < MIN_PASSWORD
-          ? `At least ${MIN_PASSWORD} characters`
-          : " "}
-      </Text>
-      <Text style={styles.optionalLabel}>
-        Delivery info (optional — speeds up checkout later)
-      </Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Phone"
+
+      <AppText variant="small" color={colors.muted} style={{ marginTop: space.sm }}>
+        Delivery details are optional, and they speed up checkout later.
+      </AppText>
+
+      <Input
+        label="Phone"
+        icon="phone"
+        placeholder="+961 …"
         value={phone}
         onChangeText={setPhone}
         keyboardType="phone-pad"
         maxLength={MAX_PHONE}
       />
-      <TextInput
-        style={styles.input}
-        placeholder="City / Area"
+      <Input
+        label="City / area"
+        icon="map-pin"
+        placeholder="Akkar, Beirut …"
         value={city}
         onChangeText={setCity}
         maxLength={MAX_CITY}
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Address"
+      <Input
+        label="Address"
+        icon="home"
+        placeholder="Street and building"
         value={addressLine}
         onChangeText={setAddressLine}
         maxLength={MAX_ADDRESS}
       />
-      <Pressable
-        style={styles.button}
+
+      <Button
+        label="Create account"
+        loading={pending}
         onPress={() => handleRegister()}
-        disabled={pending}
-      >
-        <Text style={styles.buttonText}>
-          {pending ? "Creating..." : "Create Account"}
-        </Text>
+        style={{ marginTop: space.sm }}
+      />
+      <Pressable onPress={() => router.push("/auth/login")} style={s.switch}>
+        <AppText color={colors.muted}>Already have an account? </AppText>
+        <AppText color={colors.sea} style={{ fontFamily: fonts.bold }}>
+          Log in
+        </AppText>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, justifyContent: "center" },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    marginBottom: 24,
-    textAlign: "center",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-  },
-  button: {
-    backgroundColor: "#111",
-    borderRadius: 8,
-    padding: 14,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  buttonText: { color: "#fff", fontWeight: "600" },
-  optionalLabel: {
-    fontSize: 12,
-    color: "#888",
-    marginTop: 12,
-    marginBottom: 6,
-  },
-  hint: { fontSize: 12, color: "#888", marginBottom: 4 },
+const s = StyleSheet.create({
+  wrap: { flexGrow: 1, padding: space.xl, paddingTop: space.xxl },
+  switch: { flexDirection: "row", justifyContent: "center", marginTop: space.xl },
 });

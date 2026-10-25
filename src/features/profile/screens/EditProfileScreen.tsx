@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { Alert, ScrollView, StyleSheet } from "react-native";
 import { PasswordInput } from "@/shared/components/PasswordInput";
 import {
   MAX_FULL_NAME,
@@ -5,16 +7,11 @@ import {
   MIN_PASSWORD,
 } from "@/shared/constants/limits";
 import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
-import { useState } from "react";
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { AppText } from "@/shared/components/AppText";
+import { Button } from "@/shared/components/Button";
+import { EmptyState } from "@/shared/components/EmptyState";
+import { Input } from "@/shared/components/Input";
+import { colors, space } from "@/shared/theme";
 import { useAuth } from "../../auth/context/AuthContext";
 import { profileApi } from "../api/profileApi";
 
@@ -36,10 +33,7 @@ export function EditProfileScreen() {
       await updateUser(updated);
       Alert.alert("Saved", "Your profile was updated.");
     },
-    {
-      errorTitle: "Could not save",
-      fallbackMessage: "Please try again.",
-    },
+    { errorTitle: "Could not save" },
   );
 
   const { run: handleChangePassword, pending: savingPassword } = useAsyncAction(
@@ -75,110 +69,78 @@ export function EditProfileScreen() {
         "Use your new password next time you log in.",
       );
     },
-    {
-      errorTitle: "Could not change password",
-      fallbackMessage: "Please try again.",
-    },
+    { errorTitle: "Could not change password" },
   );
 
   if (!user) {
     return (
-      <View style={styles.center}>
-        <Text>Please log in first.</Text>
-      </View>
+      <EmptyState
+        icon="user"
+        title="You're not logged in"
+        message="Log in first to edit your profile."
+      />
     );
   }
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={styles.section}>Profile</Text>
-      <Text style={styles.label}>Email</Text>
-      <TextInput
-        style={[styles.input, styles.readOnly]}
+    <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled">
+      <AppText variant="heading" style={s.section}>
+        Your details
+      </AppText>
+      <Input
+        label="Email"
+        icon="mail"
         value={user.email}
         editable={false}
+        style={{ color: colors.muted }}
       />
-      <Text style={styles.label}>Full name</Text>
-      <TextInput
-        style={styles.input}
+      <Input
+        label="Full name"
+        icon="user"
+        placeholder="Your name"
         value={fullName}
         onChangeText={setFullName}
         maxLength={MAX_FULL_NAME}
       />
-      <Pressable
-        style={styles.button}
+      <Button
+        label="Save changes"
+        loading={savingProfile}
         onPress={() => handleSaveProfile()}
-        disabled={savingProfile}
-      >
-        <Text style={styles.buttonText}>
-          {savingProfile ? "Saving..." : "Save Changes"}
-        </Text>
-      </Pressable>
+      />
 
-      <Text style={[styles.section, { marginTop: 32 }]}>Change password</Text>
-
+      <AppText variant="heading" style={[s.section, { marginTop: space.xxl }]}>
+        Change password
+      </AppText>
       <PasswordInput
-        placeholder="Current password"
-        secureTextEntry
+        label="Current password"
+        placeholder="Your current password"
         value={currentPassword}
         onChangeText={setCurrentPassword}
       />
-
       <PasswordInput
-        placeholder="New password (min 8 characters)"
+        label="New password"
+        placeholder={`At least ${MIN_PASSWORD} characters`}
         value={newPassword}
         onChangeText={setNewPassword}
         maxLength={MAX_PASSWORD}
       />
-      <TextInput
-        style={[styles.input, { marginTop: 10 }]}
-        placeholder="Confirm new password"
-        secureTextEntry
+      <PasswordInput
+        label="Confirm new password"
+        placeholder="Repeat the new password"
         value={confirmPassword}
         onChangeText={setConfirmPassword}
         maxLength={MAX_PASSWORD}
       />
-      <Pressable
-        style={styles.button}
+      <Button
+        label="Update password"
+        loading={savingPassword}
         onPress={() => handleChangePassword()}
-        disabled={savingPassword}
-      >
-        <Text style={styles.buttonText}>
-          {savingPassword ? "Updating..." : "Update Password"}
-        </Text>
-      </Pressable>
+      />
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  container: { padding: 20, paddingBottom: 48 },
-  section: { fontSize: 18, fontWeight: "700", marginBottom: 12 },
-  label: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#444",
-    marginBottom: 4,
-    marginTop: 10,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 15,
-  },
-  readOnly: { backgroundColor: "#f2f2f2", color: "#777" },
-  button: {
-    backgroundColor: "#111",
-    borderRadius: 8,
-    padding: 14,
-    alignItems: "center",
-    marginTop: 16,
-  },
-  buttonText: { color: "#fff", fontWeight: "600" },
+const s = StyleSheet.create({
+  wrap: { padding: space.lg, paddingBottom: space.xxl },
+  section: { marginBottom: space.md },
 });

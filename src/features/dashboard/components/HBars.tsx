@@ -1,4 +1,6 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { AppText } from "@/shared/components/AppText";
+import { colors, fonts } from "@/shared/theme";
 
 export function HBars({
   rows,
@@ -8,7 +10,11 @@ export function HBars({
   const max = Math.max(1, ...rows.map((r) => r.value));
 
   if (rows.length === 0) {
-    return <Text style={s.empty}>No data yet.</Text>;
+    return (
+      <AppText variant="small" color={colors.muted}>
+        No data yet.
+      </AppText>
+    );
   }
 
   return (
@@ -16,16 +22,25 @@ export function HBars({
       {rows.map((r, i) => (
         <View key={i}>
           <View style={s.row}>
-            <Text style={s.label} numberOfLines={1}>
+            <AppText
+              variant="small"
+              style={{ flex: 1, fontFamily: fonts.bold }}
+              numberOfLines={1}
+            >
               {r.label}
-            </Text>
-            <Text style={s.value}>{r.text}</Text>
+            </AppText>
+            <AppText variant="small" color={colors.muted}>
+              {r.text}
+            </AppText>
           </View>
           <View style={s.track}>
             <View
               style={[
                 s.fill,
-                { width: `${Math.max((r.value / max) * 100, 2)}%` },
+                {
+                  width: `${Math.max((r.value / max) * 100, 2)}%`,
+                  backgroundColor: colors.sea,
+                },
               ]}
             />
           </View>
@@ -36,15 +51,17 @@ export function HBars({
 }
 
 const s = StyleSheet.create({
-  empty: { color: "#888", fontSize: 13 },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 4,
     gap: 8,
   },
-  label: { flex: 1, fontSize: 13, fontWeight: "600" },
-  value: { fontSize: 12, color: "#666" },
-  track: { height: 8, backgroundColor: "#eee", borderRadius: 4 },
-  fill: { height: 8, backgroundColor: "#111", borderRadius: 4 },
+  track: {
+    height: 8,
+    backgroundColor: colors.line,
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  fill: { height: 8, borderRadius: 4 },
 });

@@ -1,20 +1,23 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    RefreshControl,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  View,
 } from "react-native";
-import { formatCurrency, formatDate } from "../../../shared/utils/format";
-import { apiErrorMessage } from "../../../shared/utils/apiError";
+import { Feather } from "@expo/vector-icons";
+import { formatCurrency, formatDate } from "@/shared/utils/format";
+import { apiErrorMessage } from "@/shared/utils/apiError";
+import { AppText } from "@/shared/components/AppText";
+import { EmptyState } from "@/shared/components/EmptyState";
 import { useAuth } from "../../auth/context/AuthContext";
 import { ordersApi } from "../api/ordersApi";
 import { OrderStatusBadge } from "../components/OrderStatusBadge";
 import { Order } from "../types";
+import { colors, radius, space } from "@/shared/theme";
 
 export function OrdersScreen() {
   const { user } = useAuth();
@@ -50,16 +53,37 @@ export function OrdersScreen() {
 
   if (!user) {
     return (
-      <View style={styles.center}>
-        <Text>Log in to see your orders.</Text>
+      <EmptyState
+        icon="user"
+        title="You're not logged in"
+        message="Log in to see the orders you've placed."
+        action={{ label: "Log in", onPress: () => router.replace("/auth/login") }}
+      />
+    );
+  }
+
+  if (loading) {
+    return (
+      <View style={s.center}>
+        <ActivityIndicator color={colors.sea} />
       </View>
     );
   }
-  if (loading) {
+
+  if (orders.length === 0) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator />
-      </View>
+      <EmptyState
+        icon="package"
+        title={error ? "Could not load orders" : "No orders yet"}
+        message={
+          error ?? "When you place an order it will appear here with its status."
+        }
+        action={
+          error
+            ? { label: "Try again", onPress: handleRefresh }
+            : { label: "Browse the shop", onPress: () => router.push("/(tabs)") }
+        }
+      />
     );
   }
 
@@ -67,30 +91,37 @@ export function OrdersScreen() {
     <FlatList
       data={orders}
       keyExtractor={(o) => o.id.toString()}
-      contentContainerStyle={{ padding: 16 }}
+      contentContainerStyle={{ padding: space.lg, gap: space.md }}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-      }
-      ListEmptyComponent={
-        <Text style={styles.empty}>
-          {error ?? "You haven't placed any orders yet."}
-        </Text>
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.sea}
+          colors={[colors.sea]}
+        />
       }
       renderItem={({ item }) => (
         <Pressable
-          style={styles.card}
+          style={s.card}
+          accessibilityRole="button"
           onPress={() => router.push(`/orders/${item.id}`)}
         >
-          <View style={styles.rowBetween}>
-            <Text style={styles.title}>Order #{item.id}</Text>
+          <View style={s.rowBetween}>
+            <AppText variant="heading">Order #{item.id}</AppText>
             <OrderStatusBadge status={item.status} />
           </View>
-          <Text style={styles.meta}>{formatDate(item.createdAt)}</Text>
-          <View style={styles.rowBetween}>
-            <Text style={styles.meta}>
-              {item.items.length} item{item.items.length === 1 ? "" : "s"}
-            </Text>
-            <Text style={styles.total}>{formatCurrency(item.totalAmount)}</Text>
+          <AppText variant="small" color={colors.muted}>
+            {formatDate(item.createdAt)}
+          </AppText>
+          <View style={s.divider} />
+          <View style={s.rowBetween}>
+            <View style={s.itemsRow}>
+              <Feather name="shopping-bag" size={14} color={colors.muted} />
+              <AppText variant="small" color={colors.muted}>
+                {item.items.length} item{item.items.length === 1 ? "" : "s"}
+              </AppText>
+            </View>
+            <AppText variant="price">{formatCurrency(item.totalAmount)}</AppText>
           </View>
         </Pressable>
       )}
@@ -98,27 +129,25 @@ export function OrdersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  empty: { textAlign: "center", color: "#888", marginTop: 40 },
+const s = StyleSheet.create({
+  center: { flex: 1, alignItems: "center", justifyContent: "center" },
   card: {
-    backgroundColor: "#f5f5f5",
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 12,
-    gap: 6,
+    backgroundColor: colors.surface,
+    borderRadius: radius.image,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+    padding: space.lg,
+    gap: 4,
   },
   rowBetween: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  title: { fontSize: 16, fontWeight: "700" },
-  meta: { fontSize: 13, color: "#777" },
-  total: { fontSize: 16, fontWeight: "700" },
+  itemsRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.line,
+    marginVertical: space.sm,
+  },
 });

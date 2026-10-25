@@ -1,28 +1,36 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { OrderStatus } from "../types";
+import { AppText } from "@/shared/components/AppText";
+import { colors, fonts } from "@/shared/theme";
 
-const COLORS: Record<OrderStatus, string> = {
-  PENDING: "#b7791f",
-  PAID: "#2563eb",
-  SHIPPED: "#6b46c1",
-  DELIVERED: "#2f855a",
-  CANCELLED: "#c0392b",
+const TONE: Record<OrderStatus, { fg: string; bg: string }> = {
+  PENDING: { fg: "#8A6A00", bg: colors.lemonSoft },
+  PAID: { fg: colors.sea, bg: colors.seaSoft },
+  SHIPPED: { fg: "#17766F", bg: "#DAF1EF" },
+  DELIVERED: { fg: colors.leaf, bg: colors.leafSoft },
+  CANCELLED: { fg: colors.tomato, bg: colors.tomatoSoft },
 };
 
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {
+  const tone = TONE[status] ?? TONE.PENDING;
   return (
-    <View style={[styles.badge, { backgroundColor: COLORS[status] + "22" }]}>
-      <Text style={[styles.text, { color: COLORS[status] }]}>{status}</Text>
+    <View style={[s.badge, { backgroundColor: tone.bg }]}>
+      <AppText
+        variant="small"
+        color={tone.fg}
+        style={{ fontFamily: fonts.bold, fontSize: 11 }}
+      >
+        {status}
+      </AppText>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   badge: {
-    borderRadius: 12,
+    borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 3,
     alignSelf: "flex-start",
   },
-  text: { fontSize: 12, fontWeight: "700" },
 });

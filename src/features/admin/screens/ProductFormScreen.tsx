@@ -6,6 +6,11 @@ import {
   MAX_UNIT,
 } from "@/shared/constants/limits";
 import { apiErrorMessage } from "@/shared/utils/apiError";
+import { AppText } from "@/shared/components/AppText";
+import { Button } from "@/shared/components/Button";
+import { Input } from "@/shared/components/Input";
+import { aisle, colors, radius, space } from "@/shared/theme";
+import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
@@ -16,8 +21,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { IMAGE_BASE_URL } from "../../../api/client";
@@ -217,7 +220,9 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.label}>Photos</Text>
+        <AppText variant="small" color={colors.muted} style={styles.label}>
+          Photos
+        </AppText>
         <View style={styles.gallery}>
           {images.map((img) => (
             <View key={img.id} style={styles.thumbWrap}>
@@ -227,9 +232,10 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
               />
               <Pressable
                 style={styles.removeBadge}
+                accessibilityLabel="Remove photo"
                 onPress={() => handleRemoveImage(img.id)}
               >
-                <Text style={styles.removeBadgeText}>✕</Text>
+                <Feather name="x" size={12} color={colors.onSea} />
               </Pressable>
             </View>
           ))}
@@ -240,48 +246,50 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
             ]}
             onPress={pickImage}
             disabled={uploadingImage || images.length >= MAX_PHOTOS}
+            accessibilityLabel="Add photo"
           >
             {uploadingImage ? (
-              <ActivityIndicator size="small" color="#888" />
+              <ActivityIndicator size="small" color={colors.muted} />
             ) : (
-              <Text style={{ fontSize: 24, color: "#888" }}>+</Text>
+              <Feather name="plus" size={24} color={colors.muted} />
             )}
           </Pressable>
         </View>
-        <Text style={styles.photoHint}>
+        <AppText variant="small" color={colors.muted} style={{ marginTop: 6 }}>
           {images.length}/{MAX_PHOTOS} photos
-        </Text>
-        <Text style={styles.label}>Name</Text>
-        <TextInput
-          style={styles.input}
+        </AppText>
+
+        <Input
+          label="Name"
+          placeholder="What are you selling"
           value={name}
           onChangeText={setName}
           maxLength={MAX_NAME}
         />
-
-        <Text style={styles.label}>Description</Text>
-        <TextInput
-          style={[styles.input, { height: 80 }]}
+        <Input
+          label="Description"
+          placeholder="Tell buyers what makes it good"
           value={description}
           onChangeText={setDescription}
           multiline
+          style={{ height: 84, paddingTop: 12 }}
           maxLength={MAX_DESCRIPTION}
         />
 
         <View style={styles.row}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.label}>Price</Text>
-            <TextInput
-              style={styles.input}
+            <Input
+              label="Price"
+              placeholder="0.00"
               value={price}
               onChangeText={setPrice}
               keyboardType="decimal-pad"
             />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.label}>Stock</Text>
-            <TextInput
-              style={styles.input}
+            <Input
+              label="Stock"
+              placeholder="0"
               value={stock}
               onChangeText={setStock}
               keyboardType="number-pad"
@@ -289,9 +297,9 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
             />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.label}>Unit</Text>
-            <TextInput
-              style={styles.input}
+            <Input
+              label="Unit"
+              placeholder="kg"
               value={unit}
               onChangeText={setUnit}
               autoCapitalize="none"
@@ -300,70 +308,82 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
           </View>
         </View>
 
-        <Text style={styles.label}>Category</Text>
+        <AppText variant="small" color={colors.muted} style={styles.label}>
+          Category
+        </AppText>
         <View style={styles.chips}>
-          {categories.map((c) => (
-            <Pressable
-              key={c.id}
-              style={[styles.chip, categoryId === c.id && styles.chipActive]}
-              onPress={() => setCategoryId(c.id)}
-            >
-              <Text
-                style={
-                  categoryId === c.id ? styles.chipTextActive : styles.chipText
-                }
+          {categories.map((c) => {
+            const active = categoryId === c.id;
+            const tone = aisle(c.id).tone;
+            return (
+              <Pressable
+                key={c.id}
+                style={[
+                  styles.chip,
+                  active && { backgroundColor: tone, borderColor: tone },
+                ]}
+                onPress={() => setCategoryId(c.id)}
+                accessibilityState={{ selected: active }}
               >
-                {c.name}
-              </Text>
-            </Pressable>
-          ))}
+                <AppText variant="small" color={active ? colors.onSea : colors.ink}>
+                  {c.name}
+                </AppText>
+              </Pressable>
+            );
+          })}
         </View>
 
-        <Text style={styles.label}>Attributes (category-specific)</Text>
+        <AppText variant="small" color={colors.muted} style={styles.label}>
+          Attributes (category-specific)
+        </AppText>
         {attrs.map((a, i) => (
           <View key={i} style={styles.attrRow}>
-            <TextInput
-              style={[styles.input, { flex: 1 }]}
+            <Input
               placeholder="key"
               value={a.key}
               onChangeText={(t) => updateAttr(i, "key", t)}
               autoCapitalize="none"
+              style={{ flex: 1 }}
             />
-            <TextInput
-              style={[styles.input, { flex: 1 }]}
+            <Input
               placeholder="value"
               value={a.value}
               onChangeText={(t) => updateAttr(i, "value", t)}
               autoCapitalize="none"
+              style={{ flex: 1 }}
             />
             <Pressable
+              hitSlop={8}
+              accessibilityLabel="Remove attribute"
               onPress={() =>
                 setAttrs((prev) => prev.filter((_, idx) => idx !== i))
               }
             >
-              <Text style={styles.remove}>✕</Text>
+              <Feather name="x" size={18} color={colors.tomato} />
             </Pressable>
           </View>
         ))}
         <Pressable
           onPress={() => setAttrs((prev) => [...prev, { key: "", value: "" }])}
         >
-          <Text style={styles.addAttr}>+ Add attribute</Text>
+          <AppText variant="small" color={colors.sea} style={styles.addAttr}>
+            + Add attribute
+          </AppText>
         </Pressable>
 
-        <Pressable
-          style={styles.saveButton}
-          onPress={handleSave}
-          disabled={saving || uploadingImage}
-        >
-          <Text style={styles.saveText}>
-            {saving
+        <Button
+          label={
+            saving
               ? "Saving..."
               : isPersisted
-                ? "Save Changes"
-                : "Create Product"}
-          </Text>
-        </Pressable>
+                ? "Save changes"
+                : "Create product"
+          }
+          loading={saving}
+          disabled={uploadingImage}
+          onPress={handleSave}
+          style={{ marginTop: space.xl }}
+        />
       </ScrollView>
       <LoadingOverlay
         visible={saving}
@@ -374,75 +394,49 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, paddingBottom: 48 },
+  container: { padding: space.lg, paddingBottom: space.xxl },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  label: {
-    fontSize: 13,
-    fontWeight: "600",
-    marginBottom: 4,
-    marginTop: 12,
-    color: "#444",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 15,
-  },
-  row: { flexDirection: "row", gap: 8 },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  label: { marginBottom: 4, marginTop: space.md },
+  row: { flexDirection: "row", gap: space.sm },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   chip: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    borderRadius: radius.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    backgroundColor: colors.surface,
   },
-  chipActive: { backgroundColor: "#111", borderColor: "#111" },
-  chipText: { color: "#333" },
-  chipTextActive: { color: "#fff" },
   attrRow: {
     flexDirection: "row",
-    gap: 8,
+    gap: space.sm,
     alignItems: "center",
-    marginBottom: 8,
   },
-  remove: { color: "#c0392b", fontSize: 16, paddingHorizontal: 4 },
-  addAttr: { color: "#2563eb", fontWeight: "600", marginTop: 4 },
-  saveButton: {
-    backgroundColor: "#111",
-    borderRadius: 8,
-    padding: 14,
-    alignItems: "center",
-    marginTop: 24,
-  },
-  saveText: { color: "#fff", fontWeight: "600" },
+  addAttr: { marginTop: space.xs },
   gallery: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   thumbWrap: { position: "relative" },
-  adminThumb: { width: 70, height: 70, borderRadius: 8 },
+  adminThumb: { width: 70, height: 70, borderRadius: radius.input },
   removeBadge: {
     position: "absolute",
     top: -6,
     right: -6,
-    backgroundColor: "#c0392b",
+    backgroundColor: colors.tomato,
     borderRadius: 10,
     width: 20,
     height: 20,
     justifyContent: "center",
     alignItems: "center",
   },
-  removeBadgeText: { color: "#fff", fontSize: 12 },
   addThumb: {
     width: 70,
     height: 70,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#ddd",
+    borderRadius: radius.input,
+    borderWidth: 1.5,
+    borderColor: colors.line,
     borderStyle: "dashed",
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: colors.surface,
   },
   addThumbDisabled: { opacity: 0.4 },
-  photoHint: { fontSize: 12, color: "#888", marginTop: 6 },
 });

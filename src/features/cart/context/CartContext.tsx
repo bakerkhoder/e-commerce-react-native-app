@@ -11,7 +11,7 @@ import {
 import { Alert } from "react-native";
 import { useAuth } from "../../auth/context/AuthContext";
 import { Product } from "../../catalog/types";
-import { showApiError } from "../../../shared/utils/apiError";
+import { showApiError } from "@/shared/utils/apiError";
 import { cartApi } from "../api/cartApi";
 
 /** Matches the backend cap in CartService; keeps guest carts and the UI in step. */
@@ -48,15 +48,12 @@ function fromServerCart(
     productName: string;
     unitPrice: number;
     quantity: number;
+    thumbnailUrl: string | null;
   }[],
 ): CartLine[] {
   // maxStock drives the "+" stepper, so cap it at the backend limit instead of 9999:
   // otherwise the UI happily offers a 100th unit and the server answers 400.
-  return items.map((i) => ({
-    ...i,
-    thumbnailUrl: null,
-    maxStock: MAX_QUANTITY,
-  }));
+  return items.map((i) => ({ ...i, maxStock: MAX_QUANTITY }));
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {

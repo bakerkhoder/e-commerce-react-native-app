@@ -5,15 +5,17 @@ import {
   FlatList,
   RefreshControl,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { catalogApi } from "../api/catalogApi";
 import { CategoryChips } from "../components/CategoryChips";
 import { ProductCard } from "../components/ProductCard";
-import { apiErrorMessage } from "../../../shared/utils/apiError";
-import { MAX_QUERY } from "../../../shared/constants/limits";
+import { AppText } from "@/shared/components/AppText";
+import { EmptyState } from "@/shared/components/EmptyState";
+import { Input } from "@/shared/components/Input";
+import { apiErrorMessage } from "@/shared/utils/apiError";
+import { MAX_QUERY } from "@/shared/constants/limits";
+import { colors, space } from "@/shared/theme";
 import { Category, Product } from "../types";
 
 const DEBOUNCE_MS = 400;
@@ -94,6 +96,14 @@ export function CatalogScreen() {
     }
   }
 
+  function clearFilters() {
+    setQuery("");
+    queryRef.current = "";
+    setCategoryId(null);
+    categoryRef.current = null;
+    load("", null).catch(() => {});
+  }
+
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -102,70 +112,87 @@ export function CatalogScreen() {
 
   if (initialLoading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator />
+      <View style={s.center}>
+        <ActivityIndicator color={colors.sea} />
       </View>
     );
   }
 
+  const filtered = !!query.trim() || categoryId !== null;
+
   return (
-    <View style={{ flex: 1 }}>
-      <TextInput
-        style={styles.searchBar}
-        placeholder="Search products..."
-        value={query}
-        onChangeText={handleQueryChange}
-        autoCapitalize="none"
-        maxLength={MAX_QUERY}
-      />
-      <CategoryChips
-        categories={categories}
-        selectedId={categoryId}
-        onSelect={handleCategorySelect}
-      />
-      {searching && <ActivityIndicator style={{ marginTop: 8 }} />}
-      {error && (
-        <Text style={styles.error} onPress={handleRefresh}>
-          {error} Tap to retry.
-        </Text>
-      )}
-      <FlatList
-        data={products}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={{ padding: 16 }}
-        renderItem={({ item }) => <ProductCard product={item} />}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-        ListEmptyComponent={
-          <Text style={styles.empty}>
-            {query.trim() || categoryId
-              ? "No products match."
-              : "No products yet."}
-          </Text>
-        }
-      />
-    </View>
+    <FlatList
+      data={products}
+      numColumns={2}
+      keyExtractor={(item) => item.id.toString()}
+      columnWrapperStyle={{ justifyContent: "space-between" }}
+      contentContainerStyle={{
+        padding: space.lg,
+        paddingTop: space.sm,
+        gap: space.md,
+        flexGrow: 1,
+      }}
+      keyboardShouldPersistTaps="handled"
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.sea}
+          colors={[colors.sea]}
+        />
+      }
+      ListHeaderComponent={
+        <View style={{ marginBottom: space.xs }}>
+          <Input
+            icon="search"
+            placeholder="Search for produce, snacks, gadgets"
+            value={query}
+            onChangeText={handleQueryChange}
+            autoCapitalize="none"
+            returnKeyType="search"
+            maxLength={MAX_QUERY}
+          />
+          <CategoryChips
+            categories={categories}
+            selectedId={categoryId}
+            onSelect={handleCategorySelect}
+          />
+          {searching && (
+            <ActivityIndicator color={colors.sea} style={{ marginTop: space.md }} />
+          )}
+          {error && (
+            <AppText
+              variant="small"
+              color={colors.tomato}
+              onPress={handleRefresh}
+              style={{ textAlign: "center", marginTop: space.md }}
+            >
+              {error} Tap to retry.
+            </AppText>
+          )}
+        </View>
+      }
+      renderItem={({ item }) => <ProductCard product={item} />}
+      ListEmptyComponent={
+        <EmptyState
+          icon="search"
+          title={filtered ? "Nothing matches yet" : "No products yet"}
+          message={
+            filtered
+              ? "Try a shorter word, or clear the filters to see everything."
+              : "New products will show up here."
+          }
+          action={
+            filtered
+              ? { label: "Clear filters", onPress: clearFilters }
+              : undefined
+          }
+        />
+      }
+    />
   );
 }
 
-const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  searchBar: {
-    margin: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 15,
-  },
-  empty: { textAlign: "center", color: "#888", marginTop: 40 },
-  error: {
-    textAlign: "center",
-    color: "#c0392b",
-    marginTop: 12,
-    paddingHorizontal: 16,
-    fontSize: 13,
-  },
+const s = StyleSheet.create({
+  center: { flex: 1, alignItems: "center", justifyContent: "center" },
 });

@@ -1,40 +1,39 @@
 import { useState } from "react";
 import {
-    FlatList,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
 } from "react-native";
-import { MAX_QUERY } from "../../../shared/constants/limits";
-import { apiErrorMessage } from "../../../shared/utils/apiError";
+import { Feather } from "@expo/vector-icons";
+import { MAX_QUERY } from "@/shared/constants/limits";
+import { apiErrorMessage } from "@/shared/utils/apiError";
+import { AppText } from "@/shared/components/AppText";
+import { colors, fonts, radius, space } from "@/shared/theme";
 import { assistantApi } from "../api/assistantApi";
 import { ChatMessage } from "../types";
 
 export function AssistantScreen() {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      text: 'Hi! Ask me what we carry — e.g. "do you have anything organic?"',
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
 
   async function handleSend() {
-    if (!input.trim()) return;
+    const text = input.trim();
+    if (!text || sending) return;
+
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: "user",
-      text: input,
+      text,
     };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setSending(true);
+
     try {
       const answer = await assistantApi.ask(userMessage.text);
       setMessages((prev) => [
@@ -47,7 +46,10 @@ export function AssistantScreen() {
         {
           id: Date.now().toString() + "-e",
           role: "assistant",
-          text: apiErrorMessage(err, "Sorry, I couldn't process that right now."),
+          text: apiErrorMessage(
+            err,
+            "Sorry, I couldn't process that right now.",
+          ),
         },
       ]);
     } finally {
@@ -63,71 +65,114 @@ export function AssistantScreen() {
       <FlatList
         data={messages}
         keyExtractor={(m) => m.id}
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={{ padding: space.lg, gap: space.sm, flexGrow: 1 }}
+        ListEmptyComponent={
+          <View style={s.intro}>
+            <View style={s.badge}>
+              <Feather name="message-circle" size={26} color={colors.sea} />
+            </View>
+            <AppText variant="title" style={{ textAlign: "center" }}>
+              Ask the shop
+            </AppText>
+            <AppText color={colors.muted} style={{ textAlign: "center" }}>
+              Describe what you need and we&apos;ll suggest products from the shop.
+            </AppText>
+          </View>
+        }
         renderItem={({ item }) => (
           <View
             style={[
-              styles.bubble,
-              item.role === "user" ? styles.userBubble : styles.assistantBubble,
+              s.bubble,
+              item.role === "user" ? s.userBubble : s.assistantBubble,
             ]}
           >
-            <Text
-              style={
-                item.role === "user" ? styles.userText : styles.assistantText
-              }
+            <AppText
+              color={item.role === "user" ? colors.onSea : colors.ink}
             >
               {item.text}
-            </Text>
+            </AppText>
           </View>
         )}
       />
-      <View style={styles.inputRow}>
+      <View style={s.inputRow}>
         <TextInput
-          style={styles.input}
+          style={s.input}
           placeholder="Ask about our products..."
+          placeholderTextColor="#8B98A5"
           value={input}
           onChangeText={setInput}
           onSubmitEditing={handleSend}
           maxLength={MAX_QUERY}
+          returnKeyType="send"
         />
         <Pressable
-          style={styles.sendButton}
+          style={[s.send, (sending || !input.trim()) && s.sendOff]}
           onPress={handleSend}
-          disabled={sending}
+          disabled={sending || !input.trim()}
+          accessibilityLabel="Send question"
         >
-          <Text style={styles.sendText}>{sending ? "..." : "Send"}</Text>
+          <Feather name="arrow-up" size={20} color={colors.onSea} />
         </Pressable>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  bubble: { maxWidth: "80%", borderRadius: 12, padding: 12, marginBottom: 10 },
-  userBubble: { backgroundColor: "#111", alignSelf: "flex-end" },
-  assistantBubble: { backgroundColor: "#f0f0f0", alignSelf: "flex-start" },
-  userText: { color: "#fff" },
-  assistantText: { color: "#111" },
+const s = StyleSheet.create({
+  intro: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: space.sm,
+    padding: space.xxl,
+  },
+  badge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.seaSoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bubble: {
+    maxWidth: "86%",
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
+    borderRadius: radius.image,
+  },
+  userBubble: { alignSelf: "flex-end", backgroundColor: colors.sea },
+  assistantBubble: {
+    alignSelf: "flex-start",
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+  },
   inputRow: {
     flexDirection: "row",
-    padding: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-    gap: 8,
+    alignItems: "center",
+    gap: space.sm,
+    padding: space.md,
+    backgroundColor: colors.surface,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.line,
   },
   input: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    height: 46,
+    paddingHorizontal: 14,
+    backgroundColor: colors.chalk,
+    borderRadius: radius.pill,
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: colors.ink,
   },
-  sendButton: {
-    backgroundColor: "#111",
-    borderRadius: 20,
-    paddingHorizontal: 16,
+  send: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: colors.sea,
+    alignItems: "center",
     justifyContent: "center",
   },
-  sendText: { color: "#fff", fontWeight: "600" },
+  sendOff: { opacity: 0.4 },
 });

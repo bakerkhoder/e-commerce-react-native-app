@@ -1,15 +1,16 @@
-import { useAuth } from "@/features/auth/context/AuthContext";
-import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import {
-  Alert,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Alert, FlatList, StyleSheet, View } from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { Pressable } from "react-native";
+import { useAuth } from "../../auth/context/AuthContext";
+import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
+import { AppText } from "@/shared/components/AppText";
+import { Button } from "@/shared/components/Button";
+import { EmptyState } from "@/shared/components/EmptyState";
+import { ProductImage } from "@/shared/components/ProductImage";
+import { formatCurrency } from "@/shared/utils/format";
+import { colors, radius, space } from "@/shared/theme";
 import { catalogApi } from "../../catalog/api/catalogApi";
 import { Product } from "../../catalog/types";
 import { adminApi } from "../api/adminApi";
@@ -17,13 +18,14 @@ import { adminApi } from "../api/adminApi";
 export function AdminProductsScreen() {
   const [products, setProducts] = useState<Product[]>([]);
   const { user } = useAuth();
+
   useFocusEffect(
     useCallback(() => {
       const fetch =
         user?.role === "SELLER"
           ? adminApi.getMyProducts()
           : catalogApi.getProducts();
-      fetch.then(setProducts);
+      fetch.then(setProducts).catch(() => setProducts([]));
     }, [user]),
   );
 
@@ -32,10 +34,7 @@ export function AdminProductsScreen() {
       await adminApi.deleteProduct(id);
       setProducts((prev) => prev.filter((p) => p.id !== id));
     },
-    {
-      errorTitle: "Delete failed",
-      fallbackMessage: "Could not delete product.",
-    },
+    { errorTitle: "Delete failed" },
   );
 
   function handleDelete(id: number) {
@@ -51,36 +50,64 @@ export function AdminProductsScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Pressable
-        style={styles.addButton}
-        onPress={() => router.push("/manage/product-form")}
-      >
-        <Text style={styles.addButtonText}>+ New Product</Text>
-      </Pressable>
+      <View style={s.headerBar}>
+        <Button
+          label="New product"
+          icon="plus"
+          onPress={() => router.push("/manage/product-form")}
+          style={{ flex: 1 }}
+        />
+      </View>
+
       <FlatList
         data={products}
         keyExtractor={(p) => p.id.toString()}
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={{
+          paddingHorizontal: space.lg,
+          paddingBottom: space.xxl,
+          gap: space.sm,
+          flexGrow: 1,
+        }}
+        ListEmptyComponent={
+          <EmptyState
+            icon="box"
+            title="No products yet"
+            message="Add your first product and it will show up in the shop once approved."
+          />
+        }
         renderItem={({ item }) => (
-          <View style={styles.row}>
+          <View style={s.row}>
+            <ProductImage url={item.thumbnailUrl} size={56} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.meta}>
-                ${item.price.toFixed(2)} · {item.stockQuantity} in stock
-              </Text>
+              <AppText variant="heading" numberOfLines={1}>
+                {item.name}
+              </AppText>
+              <AppText variant="small" color={colors.muted}>
+                {formatCurrency(item.price)}
+              </AppText>
+              <AppText variant="small" color={colors.muted}>
+                {item.stockQuantity} in stock
+              </AppText>
             </View>
             <Pressable
+              hitSlop={10}
+              accessibilityLabel={`Edit ${item.name}`}
               onPress={() => router.push(`/manage/product-form?id=${item.id}`)}
             >
-              <Text style={styles.edit}>Edit</Text>
+              <Feather name="edit-2" size={18} color={colors.sea} />
             </Pressable>
             <Pressable
+              hitSlop={10}
+              accessibilityLabel={`Delete ${item.name}`}
               onPress={() => handleDelete(item.id)}
               disabled={deleting}
             >
-              <Text style={[styles.delete, deleting && { opacity: 0.5 }]}>
-                Delete
-              </Text>
+              <Feather
+                name="trash-2"
+                size={18}
+                color={colors.tomato}
+                style={deleting && { opacity: 0.5 }}
+              />
             </Pressable>
           </View>
         )}
@@ -89,25 +116,16 @@ export function AdminProductsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  addButton: {
-    backgroundColor: "#111",
-    margin: 16,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  addButtonText: { color: "#fff", fontWeight: "600" },
+const s = StyleSheet.create({
+  headerBar: { flexDirection: "row", padding: space.lg, paddingBottom: space.sm },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    gap: 12,
+    gap: space.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.image,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+    padding: space.md,
   },
-  name: { fontSize: 15, fontWeight: "600" },
-  meta: { fontSize: 13, color: "#888" },
-  edit: { color: "#2563eb", fontWeight: "600" },
-  delete: { color: "#c0392b", fontWeight: "600" },
 });

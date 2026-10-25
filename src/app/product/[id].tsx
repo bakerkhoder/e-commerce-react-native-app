@@ -1,185 +1,205 @@
-import { useCart } from "@/features/cart/context/CartContext";
-import { ProductGallery } from "@/features/catalog/components/ProductGallery";
-import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
-import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
+  ScrollView,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
+import { router, Stack, useLocalSearchParams } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
 import { catalogApi } from "../../features/catalog/api/catalogApi";
-import { Product } from "../../features/catalog/types";
 import { analyticsApi } from "../../features/dashboard/api/dashboardApi";
+import { useCart } from "../../features/cart/context/CartContext";
+import { ProductGallery } from "../../features/catalog/components/ProductGallery";
+import { Product } from "../../features/catalog/types";
+import { AppText } from "@/shared/components/AppText";
+import { Button } from "@/shared/components/Button";
+import { Price } from "@/shared/components/Price";
+import { Stepper } from "@/shared/components/Stepper";
+import { EmptyState } from "@/shared/components/EmptyState";
+import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
+import { aisle, colors, space } from "@/shared/theme";
 
-/** Matches the backend cap; the stepper must never offer a quantity the API rejects. */
-const MAX_QUANTITY = 99;
+const humanize = (k: string) =>
+  k.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
+
+const show = (v: unknown) =>
+  typeof v === "boolean" ? (v ? "Yes" : "No") : String(v);
 
 export default function ProductDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [product, setProduct] = useState<Product | null>(null);
+  const insets = useSafeAreaInsets();
   const { addItem } = useCart();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [failed, setFailed] = useState(false);
   const [quantity, setQuantity] = useState(1);
-  const [justAdded, setJustAdded] = useState(false);
-
-  // Never let the picker exceed either the stock on hand or the server's 99 cap.
-  const maxQty = Math.min(product?.stockQuantity ?? 1, MAX_QUANTITY);
-
-  const { run: handleAddToCart, pending: adding } = useAsyncAction(
-    async () => {
-      if (!product) return;
-      await addItem(product, quantity);
-      setJustAdded(true);
-      setTimeout(() => setJustAdded(false), 2000);
-    },
-    { errorTitle: "Could not add to cart" },
-  );
+  const [added, setAdded] = useState(false);
 
   useEffect(() => {
     catalogApi
       .getProduct(Number(id))
       .then(setProduct)
-      .catch(() => setProduct(null));
+      .catch(() => setFailed(true));
+    // Fire-and-forget view ping. This is the customer-facing page, so a seller editing
+    // the product elsewhere never counts as a view.
+    analyticsApi.recordView(Number(id));
   }, [id]);
 
-  // Fire-and-forget view ping. This is the customer-facing page, so a seller editing the
-  // product elsewhere never counts as a view.
-  useEffect(() => {
-    if (id) analyticsApi.recordView(Number(id));
-  }, [id]);
+  const { run: handleAdd, pending } = useAsyncAction(
+    async () => {
+      if (!product) return;
+      await addItem(product, quantity);
+      setAdded(true);
+    },
+    { errorTitle: "Could not add to cart" },
+  );
 
-  // async function handleAddToCart() {
-  //   if (!user) {
-  //     Alert.alert(
-  //       "Log in required",
-  //       "Please log in to add items to your cart.",
-  //       [
-  //         { text: "Cancel", style: "cancel" },
-  //         { text: "Log In", onPress: () => router.push("/auth/login") },
-  //       ],
-  //     );
-  //     return;
-  //   }
-  //   setAdding(true);
-  //   try {
-  //     await cartApi.addItem(Number(id), 1);
-  //     Alert.alert("Added to cart", `${product?.name} was added to your cart.`);
-  //   } catch (err: any) {
-  //     Alert.alert(
-  //       "Could not add item",
-  //       err.response?.data?.message ?? "Please try again.",
-  //     );
-  //   } finally {
-  //     setAdding(false);
-  //   }
-  // }
-
-  if (!product)
+  if (failed) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator />
+      <EmptyState
+        icon="alert-circle"
+        title="Product not found"
+        message="It may have been removed. Head back to the shop to keep browsing."
+        action={{
+          label: "Back to the shop",
+          onPress: () => router.replace("/(tabs)"),
+        }}
+      />
+    );
+  }
+
+  if (!product) {
+    return (
+      <View style={s.center}>
+        <ActivityIndicator color={colors.sea} />
       </View>
     );
+  }
+
+  const tone = aisle(product.categoryId);
+  const maxQty = Math.min(product.stockQuantity, 99);
+  const soldOut = product.stockQuantity === 0;
+  const stockText = soldOut
+    ? "Sold out"
+    : product.stockQuantity <= 5
+      ? `Only ${product.stockQuantity} left`
+      : "In stock";
+  const stockColor =
+    soldOut || product.stockQuantity <= 5 ? colors.tomato : colors.leaf;
 
   return (
-    <View style={styles.container}>
-      <ProductGallery images={product.images} />
-      <Text style={styles.name}>{product.name}</Text>
-      <Text style={styles.category}>{product.categoryName}</Text>
-      <Text style={styles.description}>{product.description}</Text>
-      <Text style={styles.price}>
-        ${product.price.toFixed(2)} / {product.unit}
-      </Text>
-      <Text style={styles.stock}>{product.stockQuantity} in stock</Text>
-      <View style={styles.qtyRow}>
-        <Pressable
-          style={[styles.qtyBtn, quantity <= 1 && styles.qtyBtnDisabled]}
-          onPress={() => setQuantity((q) => Math.max(1, q - 1))}
-          disabled={quantity <= 1}
-        >
-          <Text style={styles.qtyBtnText}>−</Text>
-        </Pressable>
-        <Text style={styles.qtyValue}>{quantity}</Text>
-        <Pressable
-          style={[styles.qtyBtn, quantity >= maxQty && styles.qtyBtnDisabled]}
-          onPress={() => quantity < maxQty && setQuantity((q) => q + 1)}
-          disabled={quantity >= maxQty}
-        >
-          <Text style={styles.qtyBtnText}>+</Text>
-        </Pressable>
-        <Text style={styles.stockHint}>
-          {product.stockQuantity > MAX_QUANTITY
-            ? `${maxQty} max per order`
-            : `${product.stockQuantity} available`}
-        </Text>
-      </View>
-      <Pressable
-        style={[
-          styles.button,
-          product.stockQuantity === 0 && styles.buttonDisabled,
-        ]}
-        onPress={() => handleAddToCart()}
-        disabled={product.stockQuantity === 0 || adding}
+    <View style={{ flex: 1 }}>
+      <Stack.Screen
+        options={{
+          headerLeft: () => (
+            <Pressable
+              onPress={() => router.back()}
+              style={s.back}
+              accessibilityLabel="Go back"
+            >
+              <Feather name="arrow-left" size={20} color={colors.ink} />
+            </Pressable>
+          ),
+        }}
+      />
+      {/* On iOS 26+ the stack header is transparent by default, so content would sit
+          under it. This inset behaviour keeps the gallery clear of the header. */}
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{ paddingBottom: 130 }}
       >
-        <Text style={styles.buttonText}>
-          {product.stockQuantity === 0
-            ? "Out of Stock"
-            : adding
-              ? "Adding…"
-              : "Add to Cart"}
-        </Text>
-      </Pressable>
-      {justAdded && (
-        <Pressable onPress={() => router.push("/(tabs)/cart")}>
-          <Text style={styles.addedText}>✓ Added to cart — View Cart</Text>
-        </Pressable>
-      )}
+        <ProductGallery images={product.images} tint={tone.tint} />
+        <View style={s.body}>
+          <View style={[s.aisleChip, { backgroundColor: tone.tint }]}>
+            <AppText variant="small" color={tone.tone}>
+              {product.categoryName}
+            </AppText>
+          </View>
+          <AppText variant="display">{product.name}</AppText>
+          <View style={s.priceRow}>
+            <Price value={product.price} unit={product.unit} />
+            <AppText variant="small" color={stockColor}>
+              {stockText}
+            </AppText>
+          </View>
+          {!!product.description && (
+            <AppText color={colors.muted}>{product.description}</AppText>
+          )}
+          {Object.entries(product.attributes ?? {}).map(([k, v]) => (
+            <View key={k} style={s.attr}>
+              <AppText variant="small" color={colors.muted}>
+                {humanize(k)}
+              </AppText>
+              <AppText variant="small">{show(v)}</AppText>
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+
+      <View style={[s.bar, { paddingBottom: insets.bottom + 12 }]}>
+        <Stepper
+          value={quantity}
+          max={Math.max(maxQty, 1)}
+          onChange={(v) => {
+            setAdded(false);
+            setQuantity(v);
+          }}
+        />
+        <Button
+          style={{ flex: 1 }}
+          loading={pending}
+          disabled={soldOut}
+          variant={added ? "secondary" : "primary"}
+          icon={added ? "check" : "shopping-bag"}
+          label={soldOut ? "Sold out" : added ? "Go to cart" : "Add to cart"}
+          onPress={() => (added ? router.push("/(tabs)/cart") : handleAdd())}
+        />
+      </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  name: { fontSize: 22, fontWeight: "700" },
-  category: { fontSize: 14, color: "#888", marginTop: 4 },
-  description: { fontSize: 15, marginTop: 12, lineHeight: 21 },
-  price: { fontSize: 18, fontWeight: "600", marginTop: 16 },
-  stock: { fontSize: 13, color: "#888", marginTop: 4 },
-  button: {
-    backgroundColor: "#111",
-    borderRadius: 8,
-    padding: 14,
+const s = StyleSheet.create({
+  center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  back: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
     alignItems: "center",
-    marginTop: 24,
+    justifyContent: "center",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
   },
-  buttonText: { color: "#fff", fontWeight: "600" },
-  qtyRow: {
+  body: { padding: space.lg, gap: space.md },
+  aisleChip: {
+    alignSelf: "flex-start",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+  },
+  priceRow: { flexDirection: "row", alignItems: "center", gap: space.md },
+  attr: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.line,
+  },
+  bar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    marginTop: 20,
-  },
-  qtyBtn: {
-    width: 36,
-    height: 36,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  qtyBtnDisabled: { opacity: 0.3 },
-  qtyBtnText: { fontSize: 18, fontWeight: "600" },
-  qtyValue: { fontSize: 16, width: 24, textAlign: "center" },
-  stockHint: { fontSize: 12, color: "#888", marginLeft: 8 },
-  buttonDisabled: { backgroundColor: "#aaa" },
-  addedText: {
-    color: "#2f855a",
-    textAlign: "center",
-    marginTop: 10,
-    fontWeight: "600",
+    gap: space.md,
+    paddingTop: 12,
+    paddingHorizontal: space.lg,
+    backgroundColor: colors.surface,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.line,
   },
 });

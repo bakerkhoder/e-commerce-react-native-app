@@ -1,14 +1,12 @@
-import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import {
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { formatDate } from "../../../shared/utils/format";
+import { FlatList, StyleSheet, View } from "react-native";
+import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
+import { AppText } from "@/shared/components/AppText";
+import { Button } from "@/shared/components/Button";
+import { EmptyState } from "@/shared/components/EmptyState";
+import { formatDate } from "@/shared/utils/format";
+import { colors, radius, space } from "@/shared/theme";
 import {
   SellerApplication,
   sellerApplicationApi,
@@ -19,13 +17,17 @@ export function SellerApplicationsScreen() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(() => {
-    sellerApplicationApi
+    return sellerApplicationApi
       .getPending()
       .then(setApplications)
       .finally(() => setLoading(false));
   }, []);
 
-  useFocusEffect(load);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   const { run: handleDecision, pending } = useAsyncAction(
     async (id: number, approve: boolean) => {
@@ -34,51 +36,51 @@ export function SellerApplicationsScreen() {
         : sellerApplicationApi.reject(id));
       setApplications((prev) => prev.filter((a) => a.id !== id));
     },
-    {
-      errorTitle: "Could not process",
-      fallbackMessage: "Please try again.",
-    },
+    { errorTitle: "Could not process" },
   );
+
+  if (applications.length === 0) {
+    return (
+      <EmptyState
+        icon="users"
+        title="No applications waiting"
+        message={
+          loading
+            ? "Loading applications..."
+            : "People asking to sell will show up here for review."
+        }
+      />
+    );
+  }
 
   return (
     <FlatList
       data={applications}
       keyExtractor={(a) => a.id.toString()}
-      contentContainerStyle={{ padding: 16 }}
+      contentContainerStyle={{ padding: space.lg, gap: space.md }}
       refreshing={loading}
       onRefresh={load}
-      ListEmptyComponent={
-        <Text style={styles.empty}>No pending seller applications.</Text>
-      }
       renderItem={({ item }) => (
-        <View style={styles.card}>
-          <Text style={styles.name}>{item.businessName}</Text>
-          <Text style={styles.meta}>
-            User #{item.userId} · applied {formatDate(item.submittedAt)}
-          </Text>
-          <View style={styles.row}>
-            <Pressable
-              style={[
-                styles.button,
-                styles.approve,
-                pending && { opacity: 0.6 },
-              ]}
+        <View style={s.card}>
+          <AppText variant="heading">{item.businessName}</AppText>
+          <AppText variant="small" color={colors.muted}>
+            User #{item.userId}, applied {formatDate(item.submittedAt)}
+          </AppText>
+          <View style={s.row}>
+            <Button
+              label="Approve"
+              icon="check"
+              loading={pending}
               onPress={() => handleDecision(item.id, true)}
+              style={{ flex: 1 }}
+            />
+            <Button
+              label="Reject"
+              variant="danger"
               disabled={pending}
-            >
-              <Text style={styles.buttonText}>Approve</Text>
-            </Pressable>
-            <Pressable
-              style={[
-                styles.button,
-                styles.reject,
-                pending && { opacity: 0.6 },
-              ]}
               onPress={() => handleDecision(item.id, false)}
-              disabled={pending}
-            >
-              <Text style={styles.buttonText}>Reject</Text>
-            </Pressable>
+              style={{ flex: 1 }}
+            />
           </View>
         </View>
       )}
@@ -86,25 +88,14 @@ export function SellerApplicationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  empty: { textAlign: "center", color: "#888", marginTop: 40 },
+const s = StyleSheet.create({
   card: {
-    backgroundColor: "#f5f5f5",
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 12,
-    gap: 8,
+    backgroundColor: colors.surface,
+    borderRadius: radius.image,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+    padding: space.lg,
+    gap: space.sm,
   },
-  name: { fontSize: 16, fontWeight: "600" },
-  meta: { fontSize: 13, color: "#777" },
-  row: { flexDirection: "row", gap: 10, marginTop: 4 },
-  button: {
-    flex: 1,
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: "center",
-  },
-  approve: { backgroundColor: "#2f855a" },
-  reject: { backgroundColor: "#c0392b" },
-  buttonText: { color: "#fff", fontWeight: "600" },
+  row: { flexDirection: "row", gap: space.md, marginTop: space.xs },
 });

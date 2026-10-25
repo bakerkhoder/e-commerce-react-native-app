@@ -1,71 +1,94 @@
+import { FlatList, Pressable, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { CartItemRow } from "../components/CartItemRow";
 import { useCart } from "../context/CartContext";
+import { CartItemRow } from "../components/CartItemRow";
+import { AppText } from "@/shared/components/AppText";
+import { Button } from "@/shared/components/Button";
+import { EmptyState } from "@/shared/components/EmptyState";
+import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
+import { colors, radius, space } from "@/shared/theme";
+import { formatCurrency } from "@/shared/utils/format";
 
 export function CartScreen() {
   const { items, total, isGuest, updateQuantity } = useCart();
+  const { run: change } = useAsyncAction(updateQuantity, {
+    errorTitle: "Could not update your cart",
+  });
+  const count = items.reduce((n, i) => n + i.quantity, 0);
 
   if (items.length === 0) {
     return (
-      <View style={styles.center}>
-        <Text>Your cart is empty.</Text>
-      </View>
+      <EmptyState
+        icon="shopping-bag"
+        title="Your cart is empty"
+        message="Add something from the shop and it will show up here."
+        action={{
+          label: "Browse the shop",
+          onPress: () => router.push("/(tabs)"),
+        }}
+      />
     );
   }
 
   return (
-    <View style={styles.container}>
-      {isGuest && (
-        <View style={styles.guestBanner}>
-          <Text style={styles.guestText}>
-            Shopping as a guest — log in to save your cart across devices.
-          </Text>
-        </View>
-      )}
+    <View style={{ flex: 1 }}>
       <FlatList
         data={items}
-        keyExtractor={(item) => item.productId.toString()}
+        keyExtractor={(i) => String(i.productId)}
+        contentContainerStyle={{ padding: space.lg }}
+        ItemSeparatorComponent={() => <View style={s.sep} />}
+        ListHeaderComponent={
+          isGuest ? (
+            <View style={s.guest}>
+              <AppText variant="small" style={{ flex: 1 }}>
+                Shopping as a guest. Log in to keep your cart on every device.
+              </AppText>
+              <Pressable onPress={() => router.push("/auth/login")}>
+                <AppText variant="button" color={colors.sea}>
+                  Log in
+                </AppText>
+              </Pressable>
+            </View>
+          ) : undefined
+        }
         renderItem={({ item }) => (
-          <CartItemRow item={item} onChangeQuantity={updateQuantity} />
+          <CartItemRow item={item} onChangeQuantity={change} />
         )}
-        contentContainerStyle={{ padding: 16 }}
       />
-      <View style={styles.footer}>
-        <Text style={styles.total}>Total: ${total.toFixed(2)}</Text>
-        <Pressable
-          style={styles.button}
+      <View style={s.bar}>
+        <View>
+          <AppText variant="small" color={colors.muted}>
+            {count} {count === 1 ? "item" : "items"}, shipping added at checkout
+          </AppText>
+          <AppText variant="title">{formatCurrency(total)}</AppText>
+        </View>
+        <Button
+          label="Go to checkout"
+          style={{ flex: 1, marginLeft: space.lg }}
           onPress={() => router.push("/checkout")}
-        >
-          <Text style={styles.buttonText}>Proceed to Checkout</Text>
-        </Pressable>
+        />
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  center: {
-    flex: 1,
-    justifyContent: "center",
+const s = StyleSheet.create({
+  sep: { height: StyleSheet.hairlineWidth, backgroundColor: colors.line },
+  guest: {
+    flexDirection: "row",
     alignItems: "center",
-    padding: 24,
+    gap: space.md,
+    backgroundColor: colors.lemonSoft,
+    borderRadius: radius.input,
+    padding: space.md,
+    marginBottom: space.sm,
   },
-  guestBanner: { backgroundColor: "#fff8e1", padding: 10 },
-  guestText: { fontSize: 12, color: "#8a6d00", textAlign: "center" },
-  footer: { padding: 16, borderTopWidth: 1, borderTopColor: "#eee" },
-  total: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  button: {
-    backgroundColor: "#111",
-    borderRadius: 8,
-    padding: 14,
+  bar: {
+    flexDirection: "row",
     alignItems: "center",
+    padding: space.lg,
+    backgroundColor: colors.surface,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.line,
   },
-  buttonText: { color: "#fff", fontWeight: "600" },
 });

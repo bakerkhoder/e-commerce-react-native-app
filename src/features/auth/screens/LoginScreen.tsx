@@ -1,16 +1,13 @@
+import { router } from "expo-router";
+import { useState } from "react";
+import { Alert, Pressable, ScrollView, StyleSheet } from "react-native";
 import { PasswordInput } from "@/shared/components/PasswordInput";
 import { MAX_EMAIL, MAX_PASSWORD } from "@/shared/constants/limits";
 import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
-import { router } from "expo-router";
-import { useState } from "react";
-import {
-  Alert,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { AppText } from "@/shared/components/AppText";
+import { Button } from "@/shared/components/Button";
+import { Input } from "@/shared/components/Input";
+import { colors, fonts, space } from "@/shared/theme";
 import { useAuth } from "../context/AuthContext";
 
 export function LoginScreen() {
@@ -32,64 +29,49 @@ export function LoginScreen() {
       fallbackMessage: "Invalid email or password.",
     },
   );
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welcome back</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
+    <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled">
+      <AppText variant="display">Welcome back</AppText>
+      <AppText color={colors.muted} style={{ marginBottom: space.xl }}>
+        Log in to see your orders and check out faster.
+      </AppText>
+
+      <Input
+        label="Email"
+        icon="mail"
+        placeholder="you@example.com"
         autoCapitalize="none"
         keyboardType="email-address"
         value={email}
         onChangeText={setEmail}
         maxLength={MAX_EMAIL}
       />
-
       <PasswordInput
-        placeholder="Password"
-        secureTextEntry
+        label="Password"
+        placeholder="Your password"
         value={password}
         onChangeText={setPassword}
         maxLength={MAX_PASSWORD}
       />
-      <Pressable
-        style={styles.button}
+
+      <Button
+        label="Log in"
+        loading={pending}
         onPress={() => handleLogin()}
-        disabled={pending}
-      >
-        <Text style={styles.buttonText}>
-          {pending ? "Logging in..." : "Log In"}
-        </Text>
+        style={{ marginTop: space.sm }}
+      />
+      <Pressable onPress={() => router.push("/auth/register")} style={s.switch}>
+        <AppText color={colors.muted}>New here? </AppText>
+        <AppText color={colors.sea} style={{ fontFamily: fonts.bold }}>
+          Create an account
+        </AppText>
       </Pressable>
-      <Pressable onPress={() => router.push("/auth/register")}>
-        <Text style={styles.link}>No account? Register</Text>
-      </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, justifyContent: "center" },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    marginBottom: 24,
-    textAlign: "center",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-  },
-  button: {
-    backgroundColor: "#111",
-    borderRadius: 8,
-    padding: 14,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  buttonText: { color: "#fff", fontWeight: "600" },
-  link: { color: "#555", textAlign: "center", marginTop: 16 },
+const s = StyleSheet.create({
+  wrap: { flexGrow: 1, padding: space.xl, justifyContent: "center" },
+  switch: { flexDirection: "row", justifyContent: "center", marginTop: space.xl },
 });
