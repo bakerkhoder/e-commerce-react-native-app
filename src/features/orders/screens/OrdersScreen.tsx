@@ -11,6 +11,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { formatCurrency, formatDate } from "@/shared/utils/format";
 import { apiErrorMessage } from "@/shared/utils/apiError";
+import { useTranslation } from "@/i18n";
 import { AppText } from "@/shared/components/AppText";
 import { EmptyState } from "@/shared/components/EmptyState";
 import { useAuth } from "../../auth/context/AuthContext";
@@ -21,6 +22,7 @@ import { colors, radius, space } from "@/shared/theme";
 
 export function OrdersScreen() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -31,7 +33,7 @@ export function OrdersScreen() {
       setError(null);
       setOrders(await ordersApi.getOrders());
     } catch (err) {
-      setError(apiErrorMessage(err, "Could not load your orders."));
+      setError(apiErrorMessage(err, t, "orders.loadFailed"));
     }
   }, []);
 
@@ -55,9 +57,9 @@ export function OrdersScreen() {
     return (
       <EmptyState
         icon="user"
-        title="You're not logged in"
-        message="Log in to see the orders you've placed."
-        action={{ label: "Log in", onPress: () => router.replace("/auth/login") }}
+        title={t("account.notLoggedTitle")}
+        message={t("orders.notLoggedMessage")}
+        action={{ label: t("account.login"), onPress: () => router.replace("/auth/login") }}
       />
     );
   }
@@ -74,14 +76,14 @@ export function OrdersScreen() {
     return (
       <EmptyState
         icon="package"
-        title={error ? "Could not load orders" : "No orders yet"}
+        title={error ? t("orders.loadFailedTitle2") : t("orders.emptyTitle")}
         message={
-          error ?? "When you place an order it will appear here with its status."
+          error ?? t("orders.emptyBody")
         }
         action={
           error
-            ? { label: "Try again", onPress: handleRefresh }
-            : { label: "Browse the shop", onPress: () => router.push("/(tabs)") }
+            ? { label: t("common.retry"), onPress: handleRefresh }
+            : { label: t("orders.browseShop"), onPress: () => router.push("/(tabs)") }
         }
       />
     );

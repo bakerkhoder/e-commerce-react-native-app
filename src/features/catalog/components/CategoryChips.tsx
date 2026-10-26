@@ -2,6 +2,7 @@ import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Category } from "../types";
 import { AppText } from "@/shared/components/AppText";
 import { aisle, colors, fonts, radius } from "@/shared/theme";
+import { useTranslation } from "@/i18n";
 
 function Chip({
   label,
@@ -46,6 +47,7 @@ export function CategoryChips({
   selectedId: number | null;
   onSelect: (id: number | null) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <ScrollView
       horizontal
@@ -54,7 +56,7 @@ export function CategoryChips({
       contentContainerStyle={s.row}
     >
       <Chip
-        label="All"
+        label={t("catalog.all")}
         active={selectedId === null}
         tone={colors.ink}
         onPress={() => onSelect(null)}
@@ -77,7 +79,7 @@ const s = StyleSheet.create({
   // Fixing the ScrollView's own height is what actually prevents the stretch bug —
   // without this, a child's cross-axis size is ambiguous and can blow up unpredictably
   scroll: { flexGrow: 0, height: 40 },
-  row: { gap: 8, alignItems: "center", paddingRight: 8 },
+  row: { gap: 8, alignItems: "center", paddingEnd: 8 },
   chip: {
     flexShrink: 0, // never let a chip compress or expand to fill space
     height: 36,

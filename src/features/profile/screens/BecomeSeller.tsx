@@ -7,45 +7,46 @@ import { AppText } from "@/shared/components/AppText";
 import { Button } from "@/shared/components/Button";
 import { Input } from "@/shared/components/Input";
 import { colors, space } from "@/shared/theme";
+import { useTranslation } from "@/i18n";
 import { sellerApplicationApi } from "../api/sellerApplicationApi";
 
 export function BecomeSellerScreen() {
   const [businessName, setBusinessName] = useState("");
+  const { t } = useTranslation();
 
   const { run: handleSubmit, pending: submitting } = useAsyncAction(
     async () => {
       if (!businessName.trim()) {
-        Alert.alert("Missing info", "Please enter a business name.");
+        Alert.alert(t("auth.missingInfo"), t("seller.enterBusinessName"));
         return;
       }
       await sellerApplicationApi.apply(businessName.trim());
       Alert.alert(
-        "Application submitted",
+        t("seller.submittedTitle2"),
         "We'll review it and let you know once approved.",
       );
       router.back();
     },
-    { errorTitle: "Could not submit" },
+    { errorTitleKey: "seller.submitFailed" },
   );
 
   return (
     <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled">
-      <AppText variant="display">Sell with us</AppText>
+      <AppText variant="display">{t("seller.title")}</AppText>
       <AppText color={colors.muted} style={{ marginBottom: space.xl }}>
-        Tell us the name you trade under. An admin reviews every application before
-        your products go live.
+        {t("seller.subtitle")}
       </AppText>
 
       <Input
-        label="Business name"
+        label={t("seller.businessName")}
         icon="briefcase"
-        placeholder="e.g. Baladi Farm"
+        placeholder={t("seller.businessNamePlaceholder")}
         value={businessName}
         onChangeText={setBusinessName}
         maxLength={MAX_FULL_NAME}
       />
       <Button
-        label="Submit application"
+        label={t("seller.submit")}
         loading={submitting}
         onPress={() => handleSubmit()}
         style={{ marginTop: space.sm }}

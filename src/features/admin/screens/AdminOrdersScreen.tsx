@@ -7,8 +7,10 @@ import { Button } from "@/shared/components/Button";
 import { EmptyState } from "@/shared/components/EmptyState";
 import { formatCurrency, formatDate } from "@/shared/utils/format";
 import { colors, radius, space } from "@/shared/theme";
+import { useTranslation } from "@/i18n";
+import type { TranslationKey } from "@/i18n/locales/ar";
 import { ordersApi } from "../../orders/api/ordersApi";
-import { OrderStatusBadge } from "../../orders/components/OrderStatusBadge";
+import { OrderStatusBadge, STATUS_LABEL_KEY } from "../../orders/components/OrderStatusBadge";
 import { Order, OrderStatus } from "../../orders/types";
 
 const NEXT_STATUS: Record<OrderStatus, OrderStatus | null> = {
@@ -21,17 +23,27 @@ const NEXT_STATUS: Record<OrderStatus, OrderStatus | null> = {
 
 const humanize = (v: string) => v.replace(/_/g, " ").toLowerCase();
 
-function buildWhatsAppLink(order: Order): string {
+function buildWhatsAppLink(
+  order: Order,
+  t: (key: TranslationKey, params?: Record<string, string | number>) => string,
+): string {
   const digits = order.shippingAddress.phone.replace(/[^\d]/g, "");
-  const message =
-    `Hello ${order.shippingAddress.fullName}, this is regarding your order #${order.id} ` +
-    `(${formatCurrency(order.totalAmount)}, ${order.paymentMethod.replace("_", " ")}). ` +
-    `We'd like to confirm your delivery details.`;
+  const message = t("admin.whatsappMessage", {
+    name: order.shippingAddress.fullName,
+    id: order.id,
+    total: formatCurrency(order.totalAmount),
+    payment: t(
+      order.paymentMethod === "WHISH_MONEY"
+        ? "checkout.whish"
+        : "checkout.cashOnDelivery",
+    ),
+  });
   return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
 }
 
 export function AdminOrdersScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const { t } = useTranslation();
 
   useFocusEffect(
     useCallback(() => {
@@ -46,7 +58,7 @@ export function AdminOrdersScreen() {
       const updated = await ordersApi.updateStatus(order.id, next);
       setOrders((prev) => prev.map((o) => (o.id === order.id ? updated : o)));
     },
-    { errorTitle: "Status update failed" },
+    { errorTitleKey: "admin.statusUpdateFailed" },
   );
 
   const { run: performCancel, pending: cancelling } = useAsyncAction(
@@ -54,14 +66,14 @@ export function AdminOrdersScreen() {
       const updated = await ordersApi.updateStatus(order.id, "CANCELLED");
       setOrders((prev) => prev.map((o) => (o.id === order.id ? updated : o)));
     },
-    { errorTitle: "Cancellation failed" },
+    { errorTitleKey: "admin.cancellationFailed" },
   );
 
   function cancelOrder(order: Order) {
-    Alert.alert("Cancel order?", `Order #${order.id} will be marked cancelled.`, [
-      { text: "No", style: "cancel" },
+    Alert.alert(t("admin.cancelOrderTitle"), t("admin.cancelOrderMessage", { id: order.id }), [
+      { text: t("common.no"), style: "cancel" },
       {
-        text: "Yes, cancel",
+        text: t("admin.cancelYes"),
         style: "destructive",
         onPress: () => performCancel(order),
       },
@@ -74,8 +86,8 @@ export function AdminOrdersScreen() {
     return (
       <EmptyState
         icon="list"
-        title="No orders yet"
-        message="Orders placed in the shop will appear here for you to fulfil."
+        title={t("admin.adminOrdersTitle")}
+        message={t("admin.adminOrdersMessage")}
       />
     );
   }
@@ -114,15 +126,17 @@ export function AdminOrdersScreen() {
 
             <View style={s.actions}>
               <Button
-                label="WhatsApp"
+                label={t("admin.whatsapp")}
                 icon="message-circle"
                 variant="secondary"
-                onPress={() => Linking.openURL(buildWhatsAppLink(item))}
+                onPress={() => Linking.openURL(buildWhatsAppLink(item, t))}
                 style={{ flexGrow: 1 }}
               />
               {next && (
                 <Button
-                  label={`Mark ${humanize(next)}`}
+                  label={t("admin.markAs", {
+                    status: t(STATUS_LABEL_KEY[next]).toLowerCase(),
+                  })}
                   loading={advancing}
                   onPress={() => advanceStatus(item)}
                   style={{ flexGrow: 1 }}
@@ -130,7 +144,7 @@ export function AdminOrdersScreen() {
               )}
               {item.status !== "CANCELLED" && item.status !== "DELIVERED" && (
                 <Button
-                  label="Cancel"
+                  label={t("admin.cancel")}
                   variant="danger"
                   disabled={busy}
                   onPress={() => cancelOrder(item)}

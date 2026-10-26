@@ -6,6 +6,7 @@ import {
   MAX_UNIT,
 } from "@/shared/constants/limits";
 import { apiErrorMessage } from "@/shared/utils/apiError";
+import { useTranslation } from "@/i18n";
 import { AppText } from "@/shared/components/AppText";
 import { Button } from "@/shared/components/Button";
 import { Input } from "@/shared/components/Input";
@@ -42,6 +43,7 @@ function parseAttrValue(v: string): string | number | boolean {
 
 export function ProductFormScreen({ productId }: { productId?: number }) {
   //const isAdmin = useRequireAdmin();
+  const { t } = useTranslation();
   const isEdit = productId !== undefined;
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -111,13 +113,13 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
   }
   async function pickImage() {
     if (!savedProductId) {
-      Alert.alert("Save first", "Save the product before adding photos.");
+      Alert.alert(t("form.saveFirst"), t("form.saveFirstMessage"));
       return;
     }
     if (images.length >= MAX_PHOTOS) {
       Alert.alert(
-        "Photo limit reached",
-        `A product can have at most ${MAX_PHOTOS} photos.`,
+        t("form.photoLimitTitle2"),
+        t("form.photoLimitMessage", { max: MAX_PHOTOS }),
       );
       return;
     }
@@ -140,7 +142,7 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
         })),
       );
     } catch (err: any) {
-      Alert.alert("Could not add photo", apiErrorMessage(err));
+      Alert.alert(t("form.photoAddFailed"), apiErrorMessage(err, t));
     } finally {
       setUploadingImage(false);
     }
@@ -156,7 +158,7 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
         })),
       );
     } catch (err) {
-      Alert.alert("Could not remove photo", apiErrorMessage(err));
+      Alert.alert(t("form.photoRemoveFailed"), apiErrorMessage(err, t));
     }
   }
   async function handleSave() {
@@ -164,13 +166,13 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
 
     if (!name.trim() || !price || !stock || categoryId === null) {
       Alert.alert(
-        "Missing info",
-        "Name, price, stock and category are required.",
+        t("form.missingTitle2"),
+        t("form.missingMessage"),
       );
       return;
     }
     if (isNaN(Number(price)) || isNaN(Number(stock))) {
-      Alert.alert("Invalid number", "Price and stock must be numbers.");
+      Alert.alert(t("form.invalidNumber"), t("form.invalidNumberMessage"));
       return;
     }
 
@@ -201,14 +203,14 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
         const created = await adminApi.createProduct(payload);
         setSavedProductId(created.id); // isPersisted flips to true right here — this is what actually prevents the duplicate
         Alert.alert(
-          "Product created",
-          "Now add some photos, then tap Done when finished.",
+          t("form.productCreated"),
+          t("form.productCreatedMessage"),
         );
       }
     } catch (err: any) {
       Alert.alert(
-        "Save failed",
-        err.response?.data?.message ?? "Please try again.",
+        t("form.saveFailedTitle"),
+        apiErrorMessage(err, t),
       );
     } finally {
       setSaving(false);
@@ -232,7 +234,7 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
               />
               <Pressable
                 style={styles.removeBadge}
-                accessibilityLabel="Remove photo"
+                accessibilityLabel={t("form.removePhoto")}
                 onPress={() => handleRemoveImage(img.id)}
               >
                 <Feather name="x" size={12} color={colors.onSea} />
@@ -246,7 +248,7 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
             ]}
             onPress={pickImage}
             disabled={uploadingImage || images.length >= MAX_PHOTOS}
-            accessibilityLabel="Add photo"
+            accessibilityLabel={t("form.addPhoto")}
           >
             {uploadingImage ? (
               <ActivityIndicator size="small" color={colors.muted} />
@@ -260,15 +262,15 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
         </AppText>
 
         <Input
-          label="Name"
-          placeholder="What are you selling"
+          label={t("form.name")}
+          placeholder={t("form.namePlaceholder")}
           value={name}
           onChangeText={setName}
           maxLength={MAX_NAME}
         />
         <Input
-          label="Description"
-          placeholder="Tell buyers what makes it good"
+          label={t("form.description")}
+          placeholder={t("form.descriptionPlaceholder")}
           value={description}
           onChangeText={setDescription}
           multiline
@@ -279,7 +281,7 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
         <View style={styles.row}>
           <View style={{ flex: 1 }}>
             <Input
-              label="Price"
+              label={t("form.price")}
               placeholder="0.00"
               value={price}
               onChangeText={setPrice}
@@ -288,7 +290,7 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
           </View>
           <View style={{ flex: 1 }}>
             <Input
-              label="Stock"
+              label={t("form.stock")}
               placeholder="0"
               value={stock}
               onChangeText={setStock}
@@ -298,8 +300,8 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
           </View>
           <View style={{ flex: 1 }}>
             <Input
-              label="Unit"
-              placeholder="kg"
+              label={t("form.unit")}
+              placeholder={t("form.unitPlaceholder")}
               value={unit}
               onChangeText={setUnit}
               autoCapitalize="none"
@@ -339,14 +341,14 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
         {attrs.map((a, i) => (
           <View key={i} style={styles.attrRow}>
             <Input
-              placeholder="key"
+              placeholder={t("form.attrKeyPlaceholder")}
               value={a.key}
               onChangeText={(t) => updateAttr(i, "key", t)}
               autoCapitalize="none"
               style={{ flex: 1 }}
             />
             <Input
-              placeholder="value"
+              placeholder={t("form.attrValuePlaceholder")}
               value={a.value}
               onChangeText={(t) => updateAttr(i, "value", t)}
               autoCapitalize="none"
@@ -354,7 +356,7 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
             />
             <Pressable
               hitSlop={8}
-              accessibilityLabel="Remove attribute"
+              accessibilityLabel={t("form.removeAttribute")}
               onPress={() =>
                 setAttrs((prev) => prev.filter((_, idx) => idx !== i))
               }
@@ -374,10 +376,10 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
         <Button
           label={
             saving
-              ? "Saving..."
+              ? t("form.saving")
               : isPersisted
-                ? "Save changes"
-                : "Create product"
+                ? t("form.saveChanges")
+                : t("form.create")
           }
           loading={saving}
           disabled={uploadingImage}
@@ -387,7 +389,7 @@ export function ProductFormScreen({ productId }: { productId?: number }) {
       </ScrollView>
       <LoadingOverlay
         visible={saving}
-        message={isEdit ? "Saving changes..." : "Creating product..."}
+        message={isEdit ? t("form.savingMessage") : t("form.creatingMessage")}
       />
     </>
   );

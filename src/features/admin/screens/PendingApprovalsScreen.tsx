@@ -8,8 +8,10 @@ import { EmptyState } from "@/shared/components/EmptyState";
 import { colors, radius, space } from "@/shared/theme";
 import { Product } from "../../catalog/types";
 import { adminApi } from "../api/adminApi";
+import { useTranslation } from "@/i18n";
 
 export function PendingApprovalsScreen() {
+  const { t } = useTranslation();
   const [products, setProducts] = useState<Product[]>([]);
 
   useFocusEffect(
@@ -23,15 +25,15 @@ export function PendingApprovalsScreen() {
       await (approve ? adminApi.approve(id) : adminApi.reject(id));
       setProducts((prev) => prev.filter((p) => p.id !== id));
     },
-    { errorTitle: "Action failed" },
+    { errorTitleKey: "admin.actionFailed" },
   );
 
   if (products.length === 0) {
     return (
       <EmptyState
         icon="check-square"
-        title="Nothing waiting"
-        message="New seller listings land here for you to approve or reject."
+        title={t("admin.pendingTitle")}
+        message={t("admin.pendingMessage")}
       />
     );
   }
@@ -49,14 +51,14 @@ export function PendingApprovalsScreen() {
           </AppText>
           <View style={s.row}>
             <Button
-              label="Approve"
+              label={t("admin.approve")}
               icon="check"
               loading={pending}
               onPress={() => handleDecision(item.id, true)}
               style={{ flex: 1 }}
             />
             <Button
-              label="Reject"
+              label={t("admin.reject")}
               variant="danger"
               disabled={pending}
               onPress={() => handleDecision(item.id, false)}

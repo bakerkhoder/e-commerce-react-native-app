@@ -5,20 +5,23 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../features/auth/context/AuthContext";
 import { useCart } from "../../features/cart/context/CartContext";
 import { AppText } from "@/shared/components/AppText";
-import { APP_NAME, colors, fonts } from "@/shared/theme";
+import { useTranslation } from "@/i18n";
+import { colors, fonts } from "@/shared/theme";
 
 function AccountButton() {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   if (!user) {
     return (
       <Pressable
         accessibilityRole="button"
+        accessibilityLabel={t("auth.login")}
         onPress={() => router.push("/auth/login")}
         style={s.login}
       >
         <AppText variant="button" color={colors.sea}>
-          Log in
+          {t("auth.login")}
         </AppText>
       </Pressable>
     );
@@ -27,7 +30,7 @@ function AccountButton() {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Account"
+      accessibilityLabel={t("header.account")}
       onPress={() => router.push("/account")}
       style={s.avatar}
     >
@@ -40,6 +43,7 @@ function AccountButton() {
 
 export default function TabLayout() {
   const { items } = useCart();
+  const { t } = useTranslation();
   const count = items.reduce((n, i) => n + i.quantity, 0);
   // The system navigation bar (gesture pill or 3-button row) sits below the tab bar.
   // Without this the labels get clipped on phones with a large bottom inset — exactly
@@ -58,7 +62,7 @@ export default function TabLayout() {
           color: colors.ink,
         },
         headerRight: () => (
-          <View style={{ marginRight: 16 }}>
+          <View style={{ marginEnd: 16 }}>
             <AccountButton />
           </View>
         ),
@@ -86,8 +90,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Shop",
-          headerTitle: APP_NAME,
+          title: t("tabs.shop"),
+          headerTitle: t("common.appName"),
           headerTitleStyle: {
             fontFamily: fonts.black,
             fontSize: 26,
@@ -105,8 +109,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="assistant"
         options={{
-          title: "Ask",
-          headerTitle: "Ask the shop",
+          title: t("tabs.ask"),
+          headerTitle: t("header.askShop"),
           tabBarIcon: ({ focused, size }) => (
             <Feather
               name="message-circle"
@@ -119,8 +123,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="cart"
         options={{
-          title: "Cart",
-          headerTitle: "Your cart",
+          title: t("tabs.cart"),
+          headerTitle: t("header.yourCart"),
           tabBarBadge: count > 0 ? count : undefined,
           tabBarBadgeStyle: {
             backgroundColor: colors.tomato,

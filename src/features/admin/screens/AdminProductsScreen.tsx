@@ -11,12 +11,14 @@ import { EmptyState } from "@/shared/components/EmptyState";
 import { ProductImage } from "@/shared/components/ProductImage";
 import { formatCurrency } from "@/shared/utils/format";
 import { colors, radius, space } from "@/shared/theme";
+import { useTranslation } from "@/i18n";
 import { catalogApi } from "../../catalog/api/catalogApi";
 import { Product } from "../../catalog/types";
 import { adminApi } from "../api/adminApi";
 
 export function AdminProductsScreen() {
   const [products, setProducts] = useState<Product[]>([]);
+  const { t } = useTranslation();
   const { user } = useAuth();
 
   useFocusEffect(
@@ -34,14 +36,14 @@ export function AdminProductsScreen() {
       await adminApi.deleteProduct(id);
       setProducts((prev) => prev.filter((p) => p.id !== id));
     },
-    { errorTitle: "Delete failed" },
+    { errorTitleKey: "admin.deleteFailed" },
   );
 
   function handleDelete(id: number) {
-    Alert.alert("Delete product?", "This cannot be undone.", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("admin.deleteProductTitle"), t("admin.deleteProductMessage"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Delete",
+        text: t("admin.delete"),
         style: "destructive",
         onPress: () => performDelete(id),
       },
@@ -52,7 +54,7 @@ export function AdminProductsScreen() {
     <View style={{ flex: 1 }}>
       <View style={s.headerBar}>
         <Button
-          label="New product"
+          label={t("admin.newProduct")}
           icon="plus"
           onPress={() => router.push("/manage/product-form")}
           style={{ flex: 1 }}
@@ -71,8 +73,8 @@ export function AdminProductsScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="box"
-            title="No products yet"
-            message="Add your first product and it will show up in the shop once approved."
+            title={t("admin.noProductsTitle")}
+            message={t("admin.noProductsMessage")}
           />
         }
         renderItem={({ item }) => (
@@ -86,7 +88,7 @@ export function AdminProductsScreen() {
                 {formatCurrency(item.price)}
               </AppText>
               <AppText variant="small" color={colors.muted}>
-                {item.stockQuantity} in stock
+                {t("admin.inStock", { count: item.stockQuantity })}
               </AppText>
             </View>
             <Pressable

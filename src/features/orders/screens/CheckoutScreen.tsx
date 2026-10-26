@@ -10,6 +10,8 @@ import { useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { formatCurrency } from "@/shared/utils/format";
 import { apiErrorMessage } from "@/shared/utils/apiError";
+import { useTranslation } from "@/i18n";
+import type { TranslationKey } from "@/i18n/locales/ar";
 import {
   MAX_ADDRESS,
   MAX_CITY,
@@ -24,32 +26,33 @@ import { PaymentMethodType, ShippingMethodType } from "../types";
 
 const SHIPPING_OPTIONS: {
   value: ShippingMethodType;
-  label: string;
+  labelKey: TranslationKey;
   cost: number;
 }[] = [
-  { value: "INSIDE_BEIRUT", label: "Inside Beirut", cost: 5.0 },
-  { value: "OUTSIDE_BEIRUT", label: "Outside Beirut", cost: 7.0 },
+  { value: "INSIDE_BEIRUT", labelKey: "checkout.shippingInside", cost: 5.0 },
+  { value: "OUTSIDE_BEIRUT", labelKey: "checkout.shippingOutside", cost: 7.0 },
 ];
 
 const PAYMENT_OPTIONS: {
   value: PaymentMethodType;
-  label: string;
-  note: string;
+  labelKey: TranslationKey;
+  noteKey: TranslationKey;
 }[] = [
   {
     value: "CASH_ON_DELIVERY",
-    label: "Cash on Delivery",
-    note: "Pay in cash when your order arrives.",
+    labelKey: "checkout.cashOnDelivery",
+    noteKey: "checkout.cashOnDeliveryNote",
   },
   {
     value: "WHISH_MONEY",
-    label: "Whish Money",
-    note: "We'll contact you with transfer details to confirm your payment.",
+    labelKey: "checkout.whish",
+    noteKey: "checkout.whishNote",
   },
 ];
 
 export function CheckoutScreen() {
   const { items, total: itemsTotal, isGuest, clear, refresh } = useCart();
+  const { t } = useTranslation();
   const { user } = useAuth();
 
   // Seeded straight from the session rather than copied in an effect, which would be a
@@ -96,15 +99,15 @@ export function CheckoutScreen() {
       !addressLine.trim()
     ) {
       Alert.alert(
-        "Missing info",
-        "Please fill in all required delivery fields.",
+        t("auth.missingInfo"),
+        t("checkout.missingFields"),
       );
       return;
     }
     if (isGuest && !email.trim()) {
       Alert.alert(
-        "Missing info",
-        "Please enter your email so we can contact you about your order.",
+        t("auth.missingInfo"),
+        t("checkout.missingEmail"),
       );
       return;
     }
@@ -137,17 +140,20 @@ export function CheckoutScreen() {
           });
       await clear();
       Alert.alert(
-        "Order placed!",
-        `Order #${order.id} — total ${formatCurrency(order.totalAmount)}`,
+        t("checkout.orderPlacedTitle"),
+        t("checkout.orderPlacedBody", {
+          id: order.id,
+          total: formatCurrency(order.totalAmount),
+        }),
         [
           {
-            text: "OK",
+            text: t("common.save"),
             onPress: () => router.replace(isGuest ? "/(tabs)" : "/orders"),
           },
         ],
       );
     } catch (err: any) {
-      Alert.alert("Checkout failed", apiErrorMessage(err));
+      Alert.alert(t("checkout.failed"), apiErrorMessage(err, t));
     } finally {
       setPlacing(false);
     }
@@ -160,21 +166,21 @@ export function CheckoutScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <AppText variant="heading" style={styles.section}>
-          Delivery details
+          {t("checkout.deliveryDetails")}
         </AppText>
         <Input
-          label="Full name"
+          label={t("auth.fullName")}
           icon="user"
-          placeholder="Who receives the order"
+          placeholder={t("checkout.recipientPlaceholder")}
           value={fullName}
           onChangeText={setFullName}
           maxLength={MAX_FULL_NAME}
         />
         {isGuest && (
           <Input
-            label="Email"
+            label={t("auth.email")}
             icon="mail"
-            placeholder="you@example.com"
+            placeholder={t("auth.emailPlaceholder")}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -183,34 +189,34 @@ export function CheckoutScreen() {
           />
         )}
         <Input
-          label="Phone"
+          label={t("auth.phone")}
           icon="phone"
-          placeholder="+961 …"
+          placeholder={t("auth.phonePlaceholder")}
           value={phone}
           onChangeText={setPhone}
           keyboardType="phone-pad"
           maxLength={MAX_PHONE}
         />
         <Input
-          label="City / area"
+          label={t("auth.city")}
           icon="map-pin"
-          placeholder="Akkar, Beirut …"
+          placeholder={t("auth.cityPlaceholder")}
           value={city}
           onChangeText={setCity}
           maxLength={MAX_CITY}
         />
         <Input
-          label="Address"
+          label={t("auth.address")}
           icon="home"
-          placeholder="Street and building"
+          placeholder={t("auth.addressPlaceholder")}
           value={addressLine}
           onChangeText={setAddressLine}
           maxLength={MAX_ADDRESS}
         />
         <Input
-          label="Delivery notes (optional)"
+          label={t("checkout.deliveryNotes")}
           icon="edit-2"
-          placeholder="Landmark, floor, anything useful"
+          placeholder={t("checkout.deliveryNotesPlaceholder")}
           value={notes}
           onChangeText={setNotes}
           multiline
@@ -228,13 +234,13 @@ export function CheckoutScreen() {
               style={[styles.checkbox, saveAsDefault && styles.checkboxChecked]}
             />
             <AppText variant="small" color={colors.muted}>
-              Save this info for next time
+              {t("checkout.saveInfo")}
             </AppText>
           </Pressable>
         )}
 
         <AppText variant="heading" style={styles.section}>
-          Shipping method
+          {t("checkout.shippingMethod")}
         </AppText>
         {SHIPPING_OPTIONS.map((opt) => (
           <Pressable
@@ -249,14 +255,14 @@ export function CheckoutScreen() {
                   shippingMethod === opt.value && styles.radioActive,
                 ]}
               />
-              <AppText style={{ flex: 1 }}>{opt.label}</AppText>
+              <AppText style={{ flex: 1 }}>{t(opt.labelKey)}</AppText>
               <AppText variant="heading">{formatCurrency(opt.cost)}</AppText>
             </View>
           </Pressable>
         ))}
 
         <AppText variant="heading" style={styles.section}>
-          Payment method
+          {t("checkout.paymentMethod")}
         </AppText>
         {PAYMENT_OPTIONS.map((opt) => (
           <Pressable
@@ -271,15 +277,15 @@ export function CheckoutScreen() {
                   paymentMethod === opt.value && styles.radioActive,
                 ]}
               />
-              <AppText style={{ flex: 1 }}>{opt.label}</AppText>
+              <AppText style={{ flex: 1 }}>{t(opt.labelKey)}</AppText>
             </View>
             {paymentMethod === opt.value && (
               <AppText
                 variant="small"
                 color={colors.muted}
-                style={{ paddingLeft: 28, paddingTop: 4 }}
+                style={{ paddingStart: 28, paddingTop: 4 }}
               >
-                {opt.note}
+                {t(opt.noteKey)}
               </AppText>
             )}
           </Pressable>
@@ -299,19 +305,19 @@ export function CheckoutScreen() {
             <AppText variant="small">{formatCurrency(shippingCost)}</AppText>
           </View>
           <View style={styles.summaryTotal}>
-            <AppText variant="heading">Total</AppText>
+            <AppText variant="heading">{t("checkout.total")}</AppText>
             <AppText variant="price">{formatCurrency(total)}</AppText>
           </View>
         </View>
 
         <Button
-          label={placing ? "Placing order..." : "Place order"}
+          label={placing ? t("checkout.placing") : t("checkout.placeOrder")}
           loading={placing}
           onPress={handlePlaceOrder}
           style={{ marginTop: space.lg }}
         />
       </ScrollView>
-      <LoadingOverlay visible={placing} message="Placing your order..." />
+      <LoadingOverlay visible={placing} message={t("checkout.placingMessage")} />
     </>
   );
 }

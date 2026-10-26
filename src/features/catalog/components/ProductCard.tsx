@@ -5,10 +5,12 @@ import { Product } from "../types";
 import { IMAGE_BASE_URL } from "../../../api/client";
 import { AppText } from "@/shared/components/AppText";
 import { Price } from "@/shared/components/Price";
+import { useTranslation } from "@/i18n";
 import { aisle, colors, radius } from "@/shared/theme";
 import { formatCurrency } from "@/shared/utils/format";
 
 export function ProductCard({ product }: { product: Product }) {
+  const { t } = useTranslation();
   const tone = aisle(product.categoryId);
 
   return (
@@ -31,7 +33,7 @@ export function ProductCard({ product }: { product: Product }) {
         {product.stockQuantity === 0 && (
           <View style={s.soldOut}>
             <AppText variant="small" color="#fff">
-              Sold out
+              {t("catalog.soldOut")}
             </AppText>
           </View>
         )}

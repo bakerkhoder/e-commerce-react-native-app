@@ -66,7 +66,7 @@ const s = StyleSheet.create({
   divider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.line,
-    marginLeft: 50,
+    marginStart: 50,
   },
   row: {
     flexDirection: "row",

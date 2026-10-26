@@ -1,5 +1,6 @@
 import { StyleSheet, View } from "react-native";
 import { AppText } from "@/shared/components/AppText";
+import { useTranslation } from "@/i18n";
 import { colors } from "@/shared/theme";
 
 /**
@@ -13,10 +14,11 @@ export function BarChart({
   data: { label: string; revenue: number; profit: number }[];
   height?: number;
 }) {
+  const { t } = useTranslation();
   if (data.length === 0) {
     return (
       <AppText variant="small" color={colors.muted}>
-        No data yet.
+        {t("dash.noData")}
       </AppText>
     );
   }

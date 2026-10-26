@@ -11,6 +11,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { MAX_QUERY } from "@/shared/constants/limits";
 import { apiErrorMessage } from "@/shared/utils/apiError";
+import { useTranslation } from "@/i18n";
 import { AppText } from "@/shared/components/AppText";
 import { colors, fonts, radius, space } from "@/shared/theme";
 import { assistantApi } from "../api/assistantApi";
@@ -18,6 +19,7 @@ import { ChatMessage } from "../types";
 
 export function AssistantScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const { t, language } = useTranslation();
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -46,10 +48,7 @@ export function AssistantScreen() {
         {
           id: Date.now().toString() + "-e",
           role: "assistant",
-          text: apiErrorMessage(
-            err,
-            "Sorry, I couldn't process that right now.",
-          ),
+          text: apiErrorMessage(err, t, "assistant.failed"),
         },
       ]);
     } finally {
@@ -72,10 +71,10 @@ export function AssistantScreen() {
               <Feather name="message-circle" size={26} color={colors.sea} />
             </View>
             <AppText variant="title" style={{ textAlign: "center" }}>
-              Ask the shop
+                            {t("assistant.title")}
             </AppText>
             <AppText color={colors.muted} style={{ textAlign: "center" }}>
-              Describe what you need and we&apos;ll suggest products from the shop.
+                            {t("assistant.emptyMessage")}
             </AppText>
           </View>
         }
@@ -96,8 +95,11 @@ export function AssistantScreen() {
       />
       <View style={s.inputRow}>
         <TextInput
+          // See Input.tsx: the native hint does not refresh when only the
+          // placeholder changes, so rebuild the field when the language does.
+          key={language}
           style={s.input}
-          placeholder="Ask about our products..."
+          placeholder={t("assistant.placeholder")}
           placeholderTextColor="#8B98A5"
           value={input}
           onChangeText={setInput}
@@ -109,7 +111,7 @@ export function AssistantScreen() {
           style={[s.send, (sending || !input.trim()) && s.sendOff]}
           onPress={handleSend}
           disabled={sending || !input.trim()}
-          accessibilityLabel="Send question"
+          accessibilityLabel={t("assistant.send")}
         >
           <Feather name="arrow-up" size={20} color={colors.onSea} />
         </Pressable>

@@ -51,6 +51,7 @@ directory under `src/`, check what is already there and use it.
 | Design tokens (colour, spacing, radii, type) | `src/shared/theme/` |
 | Feature-specific screens and components | `src/features/<feature>/` |
 | Hooks, pure helpers, constants | `src/shared/hooks/`, `src/shared/utils/`, `src/shared/constants/` |
+| Translations | `src/i18n/locales/ar.ts`, `src/i18n/locales/en.ts` |
 
 There is no `src/shared/ui/`. The shared primitives (`AppText`, `Button`, `Input`,
 `Price`, `Stepper`, `EmptyState`, `ListRow`, `LoadingOverlay`, `ProductImage`,
@@ -66,4 +67,27 @@ import { AppText } from "../../../shared/ui/AppText";   // wrong
 ```
 
 `@/*` maps to `./src/*` in `tsconfig.json`.
+
+## Localisation — Arabic first, RTL
+
+Arabic is the default language; English is an opt-in switch in Account. Never
+hardcode user-visible text in a component.
+
+```tsx
+const { t } = useTranslation();
+<AppText>{t("cart.checkout")}</AppText>
+```
+
+- **Add the key to `ar.ts` first.** It is the source of truth: `en.ts` is typed as
+  `Record<TranslationKey, string>`, so a missing English entry is a compile error.
+- Interpolate with named placeholders: `t("cart.itemMany", { count })` against
+  `"{count} items"`. Never build sentences by concatenating translated fragments —
+  word order differs between the languages.
+- `useAsyncAction` takes `errorTitleKey` / `fallbackMessageKey` (*keys*, not strings)
+  and translates internally.
+- **Direction, not just words:** use logical flex properties (`start`/`end`,
+  `flex-start`, `alignSelf: "flex-start"`) instead of physical `left`/`right` so the
+  layout mirrors for RTL without conditionals.
+- Layout direction is fixed at native launch. Changing it calls
+  `I18nManager.forceRTL` and tells the user to restart; text switches instantly.
 

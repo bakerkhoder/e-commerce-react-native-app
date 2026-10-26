@@ -20,6 +20,7 @@ import { Price } from "@/shared/components/Price";
 import { Stepper } from "@/shared/components/Stepper";
 import { EmptyState } from "@/shared/components/EmptyState";
 import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
+import { useTranslation } from "@/i18n";
 import { aisle, colors, space } from "@/shared/theme";
 
 const humanize = (k: string) =>
@@ -32,6 +33,7 @@ export default function ProductDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const { addItem } = useCart();
+  const { t } = useTranslation();
   const [product, setProduct] = useState<Product | null>(null);
   const [failed, setFailed] = useState(false);
   const [quantity, setQuantity] = useState(1);
@@ -53,17 +55,17 @@ export default function ProductDetail() {
       await addItem(product, quantity);
       setAdded(true);
     },
-    { errorTitle: "Could not add to cart" },
+    { errorTitleKey: "product.addFailed" },
   );
 
   if (failed) {
     return (
       <EmptyState
         icon="alert-circle"
-        title="Product not found"
-        message="It may have been removed. Head back to the shop to keep browsing."
+        title={t("product.notFoundTitle")}
+        message={t("product.notFoundMessage")}
         action={{
-          label: "Back to the shop",
+          label: t("product.backToShop"),
           onPress: () => router.replace("/(tabs)"),
         }}
       />
@@ -82,10 +84,10 @@ export default function ProductDetail() {
   const maxQty = Math.min(product.stockQuantity, 99);
   const soldOut = product.stockQuantity === 0;
   const stockText = soldOut
-    ? "Sold out"
+    ? t("product.soldOut")
     : product.stockQuantity <= 5
       ? `Only ${product.stockQuantity} left`
-      : "In stock";
+      : t("product.inStock");
   const stockColor =
     soldOut || product.stockQuantity <= 5 ? colors.tomato : colors.leaf;
 
@@ -97,7 +99,7 @@ export default function ProductDetail() {
             <Pressable
               onPress={() => router.back()}
               style={s.back}
-              accessibilityLabel="Go back"
+              accessibilityLabel={t("product.goBack")}
             >
               <Feather name="arrow-left" size={20} color={colors.ink} />
             </Pressable>
@@ -153,7 +155,13 @@ export default function ProductDetail() {
           disabled={soldOut}
           variant={added ? "secondary" : "primary"}
           icon={added ? "check" : "shopping-bag"}
-          label={soldOut ? "Sold out" : added ? "Go to cart" : "Add to cart"}
+          label={
+            soldOut
+              ? t("product.soldOut")
+              : added
+                ? t("product.goToCart")
+                : t("product.addToCart")
+          }
           onPress={() => (added ? router.push("/(tabs)/cart") : handleAdd())}
         />
       </View>

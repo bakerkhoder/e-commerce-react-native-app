@@ -1,6 +1,8 @@
 import { StyleSheet, View } from "react-native";
 import { OrderStatus } from "../types";
 import { AppText } from "@/shared/components/AppText";
+import { useTranslation } from "@/i18n";
+import type { TranslationKey } from "@/i18n/locales/ar";
 import { colors, fonts } from "@/shared/theme";
 
 const TONE: Record<OrderStatus, { fg: string; bg: string }> = {
@@ -11,8 +13,18 @@ const TONE: Record<OrderStatus, { fg: string; bg: string }> = {
   CANCELLED: { fg: colors.tomato, bg: colors.tomatoSoft },
 };
 
+export const STATUS_LABEL_KEY: Record<OrderStatus, TranslationKey> = {
+  PENDING: "status.PENDING",
+  PAID: "status.PAID",
+  SHIPPED: "status.SHIPPED",
+  DELIVERED: "status.DELIVERED",
+  CANCELLED: "status.CANCELLED",
+};
+
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {
+  const { t } = useTranslation();
   const tone = TONE[status] ?? TONE.PENDING;
+
   return (
     <View style={[s.badge, { backgroundColor: tone.bg }]}>
       <AppText
@@ -20,7 +32,7 @@ export function OrderStatusBadge({ status }: { status: OrderStatus }) {
         color={tone.fg}
         style={{ fontFamily: fonts.bold, fontSize: 11 }}
       >
-        {status}
+        {t(STATUS_LABEL_KEY[status] ?? "status.PENDING")}
       </AppText>
     </View>
   );

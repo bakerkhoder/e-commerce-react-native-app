@@ -1,12 +1,14 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { PasswordInput } from "@/shared/components/PasswordInput";
+import { LanguageSwitcher } from "@/shared/components/LanguageSwitcher";
 import { MAX_EMAIL, MAX_PASSWORD } from "@/shared/constants/limits";
 import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
 import { AppText } from "@/shared/components/AppText";
 import { Button } from "@/shared/components/Button";
 import { Input } from "@/shared/components/Input";
+import { useTranslation } from "@/i18n";
 import { colors, fonts, space } from "@/shared/theme";
 import { useAuth } from "../context/AuthContext";
 
@@ -14,33 +16,31 @@ export function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { login } = useAuth();
+  const { t } = useTranslation();
 
   const { run: handleLogin, pending } = useAsyncAction(
     async () => {
       if (!email || !password) {
-        Alert.alert("Missing info", "Please enter both email and password.");
+        Alert.alert(t("auth.missingInfo"), t("auth.missingInfoMessage"));
         return; // leaving early is fine, the hook still releases its lock
       }
       await login(email, password);
       router.replace("/(tabs)");
     },
-    {
-      errorTitle: "Login failed",
-      fallbackMessage: "Invalid email or password.",
-    },
+    { errorTitleKey: "auth.loginFailed" },
   );
 
   return (
     <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled">
-      <AppText variant="display">Welcome back</AppText>
+      <AppText variant="display">{t("auth.welcomeBack")}</AppText>
       <AppText color={colors.muted} style={{ marginBottom: space.xl }}>
-        Log in to see your orders and check out faster.
+        {t("auth.loginSubtitle")}
       </AppText>
 
       <Input
-        label="Email"
+        label={t("auth.email")}
         icon="mail"
-        placeholder="you@example.com"
+        placeholder={t("auth.emailPlaceholder")}
         autoCapitalize="none"
         keyboardType="email-address"
         value={email}
@@ -48,25 +48,29 @@ export function LoginScreen() {
         maxLength={MAX_EMAIL}
       />
       <PasswordInput
-        label="Password"
-        placeholder="Your password"
+        label={t("auth.password")}
+        placeholder={t("auth.passwordPlaceholder")}
         value={password}
         onChangeText={setPassword}
         maxLength={MAX_PASSWORD}
       />
 
       <Button
-        label="Log in"
+        label={t("auth.login")}
         loading={pending}
         onPress={() => handleLogin()}
         style={{ marginTop: space.sm }}
       />
       <Pressable onPress={() => router.push("/auth/register")} style={s.switch}>
-        <AppText color={colors.muted}>New here? </AppText>
+        <AppText color={colors.muted}>{t("auth.newHere")}</AppText>
         <AppText color={colors.sea} style={{ fontFamily: fonts.bold }}>
-          Create an account
+          {t("auth.createAccount")}
         </AppText>
       </Pressable>
+
+      <View style={s.language}>
+        <LanguageSwitcher />
+      </View>
     </ScrollView>
   );
 }
@@ -74,4 +78,5 @@ export function LoginScreen() {
 const s = StyleSheet.create({
   wrap: { flexGrow: 1, padding: space.xl, justifyContent: "center" },
   switch: { flexDirection: "row", justifyContent: "center", marginTop: space.xl },
+  language: { marginTop: space.xxl },
 });

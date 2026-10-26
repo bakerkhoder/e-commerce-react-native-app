@@ -10,6 +10,7 @@ import { Button } from "@/shared/components/Button";
 import { Input } from "@/shared/components/Input";
 import { colors, space } from "@/shared/theme";
 import { apiErrorMessage } from "@/shared/utils/apiError";
+import { useTranslation } from "@/i18n";
 import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
 import { formatCurrency } from "@/shared/utils/format";
 import { dashboardApi } from "../api/dashboardApi";
@@ -24,6 +25,7 @@ function today(): string {
 
 export function RecordEntryScreen({ type }: { type: LedgerType }) {
   const isPurchase = type === "PURCHASE";
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [filter, setFilter] = useState("");
@@ -39,7 +41,7 @@ export function RecordEntryScreen({ type }: { type: LedgerType }) {
     load
       .then(setProducts)
       .catch((err) =>
-        Alert.alert("Could not load products", apiErrorMessage(err)),
+        Alert.alert(t("catalog.loadError"), apiErrorMessage(err, t)),
       );
   }, [user]);
 
@@ -51,24 +53,24 @@ export function RecordEntryScreen({ type }: { type: LedgerType }) {
   const { run: submit, pending } = useAsyncAction(
     async () => {
       if (!product) {
-        Alert.alert("Choose a product", "Pick a product before saving.");
+        Alert.alert(t("record.chooseProduct"), t("record.chooseProductMessage"));
         return;
       }
       const qty = Number(quantity);
       const amt = Number(amount);
       if (!Number.isInteger(qty) || qty < 1) {
-        Alert.alert("Check the quantity", "Quantity must be a whole number of at least 1.");
+        Alert.alert(t("record.checkQuantity"), t("record.checkQuantityMessage"));
         return;
       }
       if (!(amt > 0)) {
         Alert.alert(
-          "Check the amount",
-          isPurchase ? "Enter the unit cost." : "Enter the unit price.",
+          t("record.checkAmountShort"),
+          isPurchase ? t("record.enterCostShort") : t("record.enterPriceShort"),
         );
         return;
       }
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        Alert.alert("Check the date", "Use the format YYYY-MM-DD.");
+        Alert.alert(t("record.checkDate"), t("record.checkDateMessage"));
         return;
       }
       await dashboardApi.record({
@@ -82,11 +84,11 @@ export function RecordEntryScreen({ type }: { type: LedgerType }) {
       });
       Alert.alert(
         "Saved",
-        isPurchase ? "Purchase recorded." : "Sale recorded.",
-        [{ text: "OK", onPress: () => router.back() }],
+        isPurchase ? t("record.purchaseRecorded") : t("record.saleRecorded"),
+        [{ text: t("common.save"), onPress: () => router.back() }],
       );
     },
-    { errorTitle: "Could not save" },
+    { errorTitleKey: "profile.saveFailed" },
   );
 
   return (
@@ -95,12 +97,12 @@ export function RecordEntryScreen({ type }: { type: LedgerType }) {
       keyboardShouldPersistTaps="handled"
     >
       <AppText variant="title">
-        {isPurchase ? "Record a purchase" : "Record a sale"}
+        {isPurchase ? t("record.headingPurchase") : t("record.headingSale")}
       </AppText>
       <AppText variant="small" style={s.subheading}>
         {isPurchase
-          ? "What you bought, and what it cost you per unit."
-          : "A sale you made outside the app, so it counts in your revenue."}
+          ? t("record.subtitlePurchase")
+          : t("record.subtitleSale")}
       </AppText>
 
       {product ? (
@@ -110,9 +112,9 @@ export function RecordEntryScreen({ type }: { type: LedgerType }) {
       ) : (
         <>
           <Input
-            label="Product"
+            label={t("record.product")}
             icon="search"
-            placeholder="Search your products"
+            placeholder={t("record.searchProducts")}
             value={filter}
             onChangeText={setFilter}
             autoCapitalize="none"
@@ -128,13 +130,13 @@ export function RecordEntryScreen({ type }: { type: LedgerType }) {
             >
               <AppText>{p.name}</AppText>
               <AppText variant="small" style={s.optionMeta}>
-                {p.stockQuantity} in stock · {formatCurrency(p.price)}
+                {t("admin.inStockPrice", { count: p.stockQuantity, price: formatCurrency(p.price) })}
               </AppText>
             </Pressable>
           ))}
           {products.length === 0 && (
             <AppText variant="small" style={s.hint}>
-              No products available to record against yet.
+              {t("record.noProductsShort")}
             </AppText>
           )}
         </>
@@ -143,7 +145,7 @@ export function RecordEntryScreen({ type }: { type: LedgerType }) {
       <View style={s.row}>
         <View style={{ flex: 1 }}>
           <Input
-            label="Quantity"
+            label={t("record.quantity")}
             icon="hash"
             value={quantity}
             onChangeText={setQuantity}
@@ -152,7 +154,7 @@ export function RecordEntryScreen({ type }: { type: LedgerType }) {
         </View>
         <View style={{ flex: 1 }}>
           <Input
-            label={isPurchase ? "Unit cost" : "Unit price"}
+            label={isPurchase ? t("record.unitCost") : t("record.unitPrice")}
             icon="tag"
             value={amount}
             onChangeText={setAmount}
@@ -162,7 +164,7 @@ export function RecordEntryScreen({ type }: { type: LedgerType }) {
       </View>
 
       <Input
-        label="Date (YYYY-MM-DD)"
+        label={t("record.date")}
         icon="calendar"
         value={date}
         onChangeText={setDate}
@@ -170,7 +172,7 @@ export function RecordEntryScreen({ type }: { type: LedgerType }) {
       />
 
       <Input
-        label="Notes (optional)"
+        label={t("record.notes")}
         icon="edit-2"
         value={notes}
         onChangeText={setNotes}
@@ -190,7 +192,7 @@ export function RecordEntryScreen({ type }: { type: LedgerType }) {
       )}
       {!isPurchase && (
         <AppText variant="small" style={s.hint}>
-          Recording a sale reduces the product&apos;s stock.
+                    {t("record.reducesStock")}
         </AppText>
       )}
 
@@ -198,7 +200,7 @@ export function RecordEntryScreen({ type }: { type: LedgerType }) {
         Total: {formatCurrency(total)}
       </AppText>
       <Button
-        label={pending ? "Saving..." : isPurchase ? "Save purchase" : "Save sale"}
+        label={pending ? t("record.saving") : isPurchase ? t("record.savePurchase") : t("record.saveSale")}
         loading={pending}
         onPress={() => submit()}
         style={{ marginTop: space.lg }}

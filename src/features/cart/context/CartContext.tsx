@@ -11,12 +11,12 @@ import {
 import { Alert } from "react-native";
 import { useAuth } from "../../auth/context/AuthContext";
 import { Product } from "../../catalog/types";
-import { showApiError } from "@/shared/utils/apiError";
+import { apiErrorMessage } from "@/shared/hooks/useAsyncAction";
+import { useTranslation } from "@/i18n";
 import { cartApi } from "../api/cartApi";
 
 /** Matches the backend cap in CartService; keeps guest carts and the UI in step. */
 const MAX_QUANTITY = 99;
-const QUANTITY_MESSAGE = `Quantity must be between 1 and ${MAX_QUANTITY}`;
 
 export interface CartLine {
   productId: number;
@@ -58,6 +58,7 @@ function fromServerCart(
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [items, setItems] = useState<CartLine[]>([]);
   const [loading, setLoading] = useState(false);
   const isGuest = !user;
@@ -95,13 +96,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       } catch (err) {
         // Alerted here so no caller can turn a rejected restriction into an
         // unhandled promise rejection.
-        showApiError(err, "Could not add item");
+        Alert.alert(t("product.addFailed"), apiErrorMessage(err, t));
       }
     } else {
       const existing = items.find((i) => i.productId === product.id);
       const nextQuantity = (existing?.quantity ?? 0) + quantity;
       if (nextQuantity < 1 || nextQuantity > MAX_QUANTITY) {
-        Alert.alert("Could not add item", QUANTITY_MESSAGE);
+        Alert.alert(
+          t("product.addFailed"),
+          t("cart.quantityRange", { max: MAX_QUANTITY }),
+        );
         return;
       }
       const next = existing
@@ -158,7 +162,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         await saveGuestCart(next);
       }
     } catch (err) {
-      showApiError(err, "Could not update quantity");
+      Alert.alert(t("cart.updateFailed"), apiErrorMessage(err, t));
     } finally {
       busy.current = false;
     }

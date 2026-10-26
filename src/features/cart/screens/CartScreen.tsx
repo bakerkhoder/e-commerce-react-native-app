@@ -1,5 +1,6 @@
 import { FlatList, Pressable, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCart } from "../context/CartContext";
 import { CartItemRow } from "../components/CartItemRow";
 import { AppText } from "@/shared/components/AppText";
@@ -7,12 +8,15 @@ import { Button } from "@/shared/components/Button";
 import { EmptyState } from "@/shared/components/EmptyState";
 import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
 import { colors, radius, space } from "@/shared/theme";
+import { useTranslation } from "@/i18n";
 import { formatCurrency } from "@/shared/utils/format";
 
 export function CartScreen() {
   const { items, total, isGuest, updateQuantity } = useCart();
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const { run: change } = useAsyncAction(updateQuantity, {
-    errorTitle: "Could not update your cart",
+    errorTitleKey: "cart.updateFailed",
   });
   const count = items.reduce((n, i) => n + i.quantity, 0);
 
@@ -20,10 +24,10 @@ export function CartScreen() {
     return (
       <EmptyState
         icon="shopping-bag"
-        title="Your cart is empty"
-        message="Add something from the shop and it will show up here."
+        title={t("cart.emptyTitle")}
+        message={t("cart.emptyMessage")}
         action={{
-          label: "Browse the shop",
+          label: t("cart.browseShop"),
           onPress: () => router.push("/(tabs)"),
         }}
       />
@@ -41,11 +45,11 @@ export function CartScreen() {
           isGuest ? (
             <View style={s.guest}>
               <AppText variant="small" style={{ flex: 1 }}>
-                Shopping as a guest. Log in to keep your cart on every device.
+                                {t("cart.guestBanner")}
               </AppText>
               <Pressable onPress={() => router.push("/auth/login")}>
                 <AppText variant="button" color={colors.sea}>
-                  Log in
+                                    {t("cart.login")}
                 </AppText>
               </Pressable>
             </View>
@@ -55,16 +59,23 @@ export function CartScreen() {
           <CartItemRow item={item} onChangeQuantity={change} />
         )}
       />
-      <View style={s.bar}>
+      <View
+        style={[
+          s.bar,
+          { paddingBottom: Math.max(insets.bottom, space.lg) },
+        ]}
+      >
         <View>
           <AppText variant="small" color={colors.muted}>
-            {count} {count === 1 ? "item" : "items"}, shipping added at checkout
+            {count === 1
+              ? t("cart.itemOne")
+              : t("cart.itemMany", { count })}
           </AppText>
           <AppText variant="title">{formatCurrency(total)}</AppText>
         </View>
         <Button
-          label="Go to checkout"
-          style={{ flex: 1, marginLeft: space.lg }}
+          label={t("cart.checkout")}
+          style={{ flex: 1, marginStart: space.lg }}
           onPress={() => router.push("/checkout")}
         />
       </View>

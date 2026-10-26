@@ -14,8 +14,10 @@ import { Input } from "@/shared/components/Input";
 import { colors, space } from "@/shared/theme";
 import { useAuth } from "../../auth/context/AuthContext";
 import { profileApi } from "../api/profileApi";
+import { useTranslation } from "@/i18n";
 
 export function EditProfileScreen() {
+  const { t } = useTranslation();
   const { user, updateUser } = useAuth();
   const [fullName, setFullName] = useState(user?.fullName ?? "");
 
@@ -26,38 +28,38 @@ export function EditProfileScreen() {
   const { run: handleSaveProfile, pending: savingProfile } = useAsyncAction(
     async () => {
       if (!fullName.trim()) {
-        Alert.alert("Missing info", "Please enter your name.");
+        Alert.alert(t("auth.missingInfo"), t("profile.enterName"));
         return;
       }
       const updated = await profileApi.updateProfile(fullName.trim());
       await updateUser(updated);
-      Alert.alert("Saved", "Your profile was updated.");
+      Alert.alert(t("profile.saved"), t("profile.savedMessage"));
     },
-    { errorTitle: "Could not save" },
+    { errorTitleKey: "profile.saveFailed" },
   );
 
   const { run: handleChangePassword, pending: savingPassword } = useAsyncAction(
     async () => {
       if (!currentPassword || !newPassword) {
-        Alert.alert("Missing info", "Please fill in both password fields.");
+        Alert.alert(t("auth.missingInfo"), t("profile.fillBothPasswords"));
         return;
       }
       if (newPassword.length < MIN_PASSWORD) {
         Alert.alert(
-          "Weak password",
-          `New password must be at least ${MIN_PASSWORD} characters.`,
+          t("profile.weakPasswordTitle"),
+          t("profile.minPassword", { count: MIN_PASSWORD }),
         );
         return;
       }
       if (newPassword.length > MAX_PASSWORD) {
         Alert.alert(
-          "Password too long",
-          `New password must be at most ${MAX_PASSWORD} characters.`,
+          t("profile.passwordTooLongTitle"),
+          t("profile.maxPassword", { count: MAX_PASSWORD }),
         );
         return;
       }
       if (newPassword !== confirmPassword) {
-        Alert.alert("Mismatch", "New password and confirmation do not match.");
+        Alert.alert(t("profile.mismatch"), t("profile.mismatchMessage"));
         return;
       }
       await profileApi.changePassword(currentPassword, newPassword);
@@ -65,19 +67,19 @@ export function EditProfileScreen() {
       setNewPassword("");
       setConfirmPassword("");
       Alert.alert(
-        "Password changed",
-        "Use your new password next time you log in.",
+        t("profile.passwordChangedTitle"),
+        t("profile.passwordChangedBody"),
       );
     },
-    { errorTitle: "Could not change password" },
+    { errorTitleKey: "profile.changePasswordFailed" },
   );
 
   if (!user) {
     return (
       <EmptyState
         icon="user"
-        title="You're not logged in"
-        message="Log in first to edit your profile."
+        title={t("account.notLoggedTitle")}
+        message={t("profile.editNotLoggedMessage")}
       />
     );
   }
@@ -85,54 +87,54 @@ export function EditProfileScreen() {
   return (
     <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled">
       <AppText variant="heading" style={s.section}>
-        Your details
+        {t("profile.yourDetails")}
       </AppText>
       <Input
-        label="Email"
+        label={t("auth.email")}
         icon="mail"
         value={user.email}
         editable={false}
         style={{ color: colors.muted }}
       />
       <Input
-        label="Full name"
+        label={t("auth.fullName")}
         icon="user"
-        placeholder="Your name"
+        placeholder={t("auth.namePlaceholder")}
         value={fullName}
         onChangeText={setFullName}
         maxLength={MAX_FULL_NAME}
       />
       <Button
-        label="Save changes"
+        label={t("profile.saveChanges")}
         loading={savingProfile}
         onPress={() => handleSaveProfile()}
       />
 
       <AppText variant="heading" style={[s.section, { marginTop: space.xxl }]}>
-        Change password
+                {t("profile.changePassword")}
       </AppText>
       <PasswordInput
-        label="Current password"
-        placeholder="Your current password"
+        label={t("profile.currentPassword")}
+        placeholder={t("profile.currentPasswordPlaceholder")}
         value={currentPassword}
         onChangeText={setCurrentPassword}
       />
       <PasswordInput
-        label="New password"
-        placeholder={`At least ${MIN_PASSWORD} characters`}
+        label={t("profile.newPassword")}
+        placeholder={t("profile.minPasswordPlaceholder", { count: MIN_PASSWORD })}
         value={newPassword}
         onChangeText={setNewPassword}
         maxLength={MAX_PASSWORD}
       />
       <PasswordInput
-        label="Confirm new password"
-        placeholder="Repeat the new password"
+        label={t("profile.confirmPassword")}
+        placeholder={t("profile.confirmPasswordPlaceholder")}
         value={confirmPassword}
         onChangeText={setConfirmPassword}
         maxLength={MAX_PASSWORD}
       />
       <Button
-        label="Update password"
+        label={t("profile.updatePassword")}
         loading={savingPassword}
         onPress={() => handleChangePassword()}
       />

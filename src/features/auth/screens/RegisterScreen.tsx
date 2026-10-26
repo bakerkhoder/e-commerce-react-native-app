@@ -1,7 +1,8 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { PasswordInput } from "@/shared/components/PasswordInput";
+import { LanguageSwitcher } from "@/shared/components/LanguageSwitcher";
 import {
   MAX_ADDRESS,
   MAX_CITY,
@@ -15,6 +16,7 @@ import { useAsyncAction } from "@/shared/hooks/useAsyncAction";
 import { AppText } from "@/shared/components/AppText";
 import { Button } from "@/shared/components/Button";
 import { Input } from "@/shared/components/Input";
+import { useTranslation } from "@/i18n";
 import { colors, fonts, space } from "@/shared/theme";
 import { useAuth } from "../context/AuthContext";
 
@@ -26,22 +28,23 @@ export function RegisterScreen() {
   const [city, setCity] = useState("");
   const [addressLine, setAddressLine] = useState("");
   const { register } = useAuth();
+  const { t } = useTranslation();
 
   const { run: handleRegister, pending } = useAsyncAction(
     async () => {
       if (!fullName || !email || !password) {
-        Alert.alert("Missing info", "Please fill in all fields.");
+        Alert.alert(t("auth.missingInfo"), t("auth.missingInfoMessage"));
         return;
       }
       if (password.length < MIN_PASSWORD) {
         Alert.alert(
-          "Password too short",
-          `Use at least ${MIN_PASSWORD} characters.`,
+          t("auth.passwordTooShort"),
+          t("auth.passwordTooShortMessage", { count: MIN_PASSWORD }),
         );
         return;
       }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-        Alert.alert("Invalid email", "Please enter a valid email address.");
+        Alert.alert(t("auth.invalidEmail"), t("auth.invalidEmailMessage"));
         return;
       }
       await register(
@@ -54,31 +57,28 @@ export function RegisterScreen() {
       );
       router.replace("/(tabs)");
     },
-    {
-      errorTitle: "Registration failed",
-      fallbackMessage: "Please try again.",
-    },
+    { errorTitleKey: "auth.registerFailed" },
   );
 
   return (
     <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled">
-      <AppText variant="display">Create account</AppText>
+      <AppText variant="display">{t("auth.createAccount")}</AppText>
       <AppText color={colors.muted} style={{ marginBottom: space.xl }}>
-        It takes a minute, and checkout gets faster afterwards.
+        {t("auth.registerSubtitle")}
       </AppText>
 
       <Input
-        label="Full name"
+        label={t("auth.fullName")}
         icon="user"
-        placeholder="Your name"
+        placeholder={t("auth.namePlaceholder")}
         value={fullName}
         onChangeText={setFullName}
         maxLength={MAX_FULL_NAME}
       />
       <Input
-        label="Email"
+        label={t("auth.email")}
         icon="mail"
-        placeholder="you@example.com"
+        placeholder={t("auth.emailPlaceholder")}
         autoCapitalize="none"
         keyboardType="email-address"
         value={email}
@@ -86,55 +86,59 @@ export function RegisterScreen() {
         maxLength={MAX_EMAIL}
       />
       <PasswordInput
-        label="Password"
-        placeholder="At least 8 characters"
+        label={t("auth.password")}
+        placeholder={t("auth.passwordMinPlaceholder")}
         value={password}
         onChangeText={setPassword}
         maxLength={MAX_PASSWORD}
       />
 
       <AppText variant="small" color={colors.muted} style={{ marginTop: space.sm }}>
-        Delivery details are optional, and they speed up checkout later.
+        {t("auth.deliveryOptional")}
       </AppText>
 
       <Input
-        label="Phone"
+        label={t("auth.phone")}
         icon="phone"
-        placeholder="+961 …"
+        placeholder={t("auth.phonePlaceholder")}
         value={phone}
         onChangeText={setPhone}
         keyboardType="phone-pad"
         maxLength={MAX_PHONE}
       />
       <Input
-        label="City / area"
+        label={t("auth.city")}
         icon="map-pin"
-        placeholder="Akkar, Beirut …"
+        placeholder={t("auth.cityPlaceholder")}
         value={city}
         onChangeText={setCity}
         maxLength={MAX_CITY}
       />
       <Input
-        label="Address"
+        label={t("auth.address")}
         icon="home"
-        placeholder="Street and building"
+        placeholder={t("auth.addressPlaceholder")}
         value={addressLine}
         onChangeText={setAddressLine}
         maxLength={MAX_ADDRESS}
       />
 
       <Button
-        label="Create account"
+        label={t("auth.register")}
         loading={pending}
         onPress={() => handleRegister()}
         style={{ marginTop: space.sm }}
       />
       <Pressable onPress={() => router.push("/auth/login")} style={s.switch}>
-        <AppText color={colors.muted}>Already have an account? </AppText>
+        <AppText color={colors.muted}>{t("auth.haveAccount")}</AppText>
         <AppText color={colors.sea} style={{ fontFamily: fonts.bold }}>
-          Log in
+          {t("auth.login")}
         </AppText>
       </Pressable>
+
+      <View style={s.language}>
+        <LanguageSwitcher />
+      </View>
     </ScrollView>
   );
 }
@@ -142,4 +146,5 @@ export function RegisterScreen() {
 const s = StyleSheet.create({
   wrap: { flexGrow: 1, padding: space.xl, paddingTop: space.xxl },
   switch: { flexDirection: "row", justifyContent: "center", marginTop: space.xl },
+  language: { marginTop: space.xxl },
 });

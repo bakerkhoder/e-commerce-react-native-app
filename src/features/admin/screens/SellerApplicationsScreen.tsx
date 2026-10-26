@@ -11,8 +11,10 @@ import {
   SellerApplication,
   sellerApplicationApi,
 } from "../../profile/api/sellerApplicationApi";
+import { useTranslation } from "@/i18n";
 
 export function SellerApplicationsScreen() {
+  const { t } = useTranslation();
   const [applications, setApplications] = useState<SellerApplication[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -36,18 +38,18 @@ export function SellerApplicationsScreen() {
         : sellerApplicationApi.reject(id));
       setApplications((prev) => prev.filter((a) => a.id !== id));
     },
-    { errorTitle: "Could not process" },
+    { errorTitleKey: "admin.processFailed" },
   );
 
   if (applications.length === 0) {
     return (
       <EmptyState
         icon="users"
-        title="No applications waiting"
+        title={t("admin.applicationsTitle")}
         message={
           loading
-            ? "Loading applications..."
-            : "People asking to sell will show up here for review."
+            ? t("admin.loadingApplications")
+            : t("admin.applicationsEmpty")
         }
       />
     );
@@ -68,14 +70,14 @@ export function SellerApplicationsScreen() {
           </AppText>
           <View style={s.row}>
             <Button
-              label="Approve"
+              label={t("admin.approve")}
               icon="check"
               loading={pending}
               onPress={() => handleDecision(item.id, true)}
               style={{ flex: 1 }}
             />
             <Button
-              label="Reject"
+              label={t("admin.reject")}
               variant="danger"
               disabled={pending}
               onPress={() => handleDecision(item.id, false)}

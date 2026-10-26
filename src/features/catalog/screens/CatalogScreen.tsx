@@ -14,6 +14,7 @@ import { AppText } from "@/shared/components/AppText";
 import { EmptyState } from "@/shared/components/EmptyState";
 import { Input } from "@/shared/components/Input";
 import { apiErrorMessage } from "@/shared/utils/apiError";
+import { useTranslation } from "@/i18n";
 import { MAX_QUERY } from "@/shared/constants/limits";
 import { colors, space } from "@/shared/theme";
 import { Category, Product } from "../types";
@@ -22,6 +23,7 @@ const DEBOUNCE_MS = 400;
 
 export function CatalogScreen() {
   const [products, setProducts] = useState<Product[]>([]);
+  const { t } = useTranslation();
   const [categories, setCategories] = useState<Category[]>([]);
   const [query, setQuery] = useState("");
   const [categoryId, setCategoryId] = useState<number | null>(null);
@@ -57,7 +59,7 @@ export function CatalogScreen() {
       }
     } catch (err) {
       if (id === requestId.current) {
-        setError(apiErrorMessage(err, "Could not load products."));
+        setError(apiErrorMessage(err, t, "catalog.loadError"));
       }
     }
   }, []);
@@ -145,7 +147,7 @@ export function CatalogScreen() {
         <View style={{ marginBottom: space.xs }}>
           <Input
             icon="search"
-            placeholder="Search for produce, snacks, gadgets"
+            placeholder={t("catalog.searchPlaceholder")}
             value={query}
             onChangeText={handleQueryChange}
             autoCapitalize="none"
@@ -167,7 +169,7 @@ export function CatalogScreen() {
               onPress={handleRefresh}
               style={{ textAlign: "center", marginTop: space.md }}
             >
-              {error} Tap to retry.
+              {error} {t("catalog.tapToRetry")}
             </AppText>
           )}
         </View>
@@ -176,15 +178,15 @@ export function CatalogScreen() {
       ListEmptyComponent={
         <EmptyState
           icon="search"
-          title={filtered ? "Nothing matches yet" : "No products yet"}
+          title={filtered ? t("catalog.nothingMatches") : t("catalog.noProducts")}
           message={
             filtered
-              ? "Try a shorter word, or clear the filters to see everything."
-              : "New products will show up here."
+              ? t("catalog.tryShorter")
+              : t("catalog.newProductsHere")
           }
           action={
             filtered
-              ? { label: "Clear filters", onPress: clearFilters }
+              ? { label: t("catalog.clearFilters"), onPress: clearFilters }
               : undefined
           }
         />

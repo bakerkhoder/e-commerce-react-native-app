@@ -1,5 +1,6 @@
 import { StyleSheet, View } from "react-native";
 import { AppText } from "@/shared/components/AppText";
+import { useTranslation } from "@/i18n";
 import { colors, fonts } from "@/shared/theme";
 
 export function HBars({
@@ -7,12 +8,13 @@ export function HBars({
 }: {
   rows: { label: string; value: number; text: string }[];
 }) {
+  const { t } = useTranslation();
   const max = Math.max(1, ...rows.map((r) => r.value));
 
   if (rows.length === 0) {
     return (
       <AppText variant="small" color={colors.muted}>
-        No data yet.
+        {t("dash.noData")}
       </AppText>
     );
   }

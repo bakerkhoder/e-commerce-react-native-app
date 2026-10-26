@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { AppText } from "./AppText";
 import { colors, radius } from "../theme";
+import { useTranslation } from "@/i18n";
 
 export function Stepper({
   value,
@@ -14,13 +15,14 @@ export function Stepper({
   max: number;
   onChange: (v: number) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <View style={s.wrap}>
       <Pressable
         style={[s.btn, value <= min && s.off]}
         disabled={value <= min}
         hitSlop={6}
-        accessibilityLabel="Decrease quantity"
+        accessibilityLabel={t("stepper.decrease")}
         onPress={() => onChange(value - 1)}
       >
         <Feather name="minus" size={16} color={colors.ink} />
@@ -32,7 +34,7 @@ export function Stepper({
         style={[s.btn, value >= max && s.off]}
         disabled={value >= max}
         hitSlop={6}
-        accessibilityLabel="Increase quantity"
+        accessibilityLabel={t("stepper.increase")}
         onPress={() => onChange(value + 1)}
       >
         <Feather name="plus" size={16} color={colors.ink} />

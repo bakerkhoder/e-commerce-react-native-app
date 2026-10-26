@@ -56,7 +56,9 @@ export function Button({
       ) : (
         <>
           {icon && <Feather name={icon} size={18} color={p.fg} />}
-          <AppText variant="button" color={p.fg}>
+          {/* Centred explicitly: the label's default alignment follows the text
+              direction, which would left/right-align it inside a centred button. */}
+          <AppText variant="button" color={p.fg} style={s.label}>
             {label}
           </AppText>
         </>
@@ -76,4 +78,5 @@ const s = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
   },
+  label: { textAlign: "center", flexShrink: 1 },
 });

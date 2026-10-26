@@ -9,9 +9,81 @@ import { Cairo_700Bold } from "@expo-google-fonts/cairo/700Bold";
 import { Cairo_800ExtraBold } from "@expo-google-fonts/cairo/800ExtraBold";
 import { AuthProvider } from "../features/auth/context/AuthContext";
 import { CartProvider } from "../features/cart/context/CartContext";
+import { I18nProvider, useTranslation } from "@/i18n";
 import { colors, fonts } from "@/shared/theme";
 
 SplashScreen.preventAutoHideAsync();
+
+/**
+ * Lives inside I18nProvider so screen titles follow the selected language. Expo Router
+ * picks up these configs from the layout tree, so they stay declared here.
+ */
+function RootNavigator() {
+  const { t } = useTranslation();
+
+  return (
+    <Stack
+      screenOptions={{
+        headerStyle: { backgroundColor: colors.chalk },
+        headerShadowVisible: false,
+        headerTintColor: colors.ink,
+        headerTitleStyle: { fontFamily: fonts.black, fontSize: 18 },
+        contentStyle: { backgroundColor: colors.chalk },
+      }}
+    >
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="product/[id]"
+        options={{ title: "", headerTransparent: true }}
+      />
+      <Stack.Screen name="auth/login" options={{ title: t("auth.login") }} />
+      <Stack.Screen
+        name="auth/register"
+        options={{ title: t("auth.register") }}
+      />
+      <Stack.Screen name="account/index" options={{ title: t("header.account") }} />
+      <Stack.Screen
+        name="account/edit"
+        options={{ title: t("account.editProfile") }}
+      />
+      <Stack.Screen
+        name="account/become-seller"
+        options={{ title: t("account.sellWithUs") }}
+      />
+      <Stack.Screen name="orders/index" options={{ title: t("account.myOrders") }} />
+      <Stack.Screen name="orders/[id]" options={{ title: t("orders.order", { id: "" }) }} />
+      <Stack.Screen name="checkout" options={{ title: t("cart.checkout") }} />
+      <Stack.Screen
+        name="manage/products"
+        options={{ title: t("account.products") }}
+      />
+      <Stack.Screen
+        name="manage/product-form"
+        options={{ title: t("form.name") }}
+      />
+      <Stack.Screen
+        name="manage/dashboard"
+        options={{ title: t("account.dashboard") }}
+      />
+      <Stack.Screen
+        name="manage/record"
+        options={{ title: t("record.purchaseTitle") }}
+      />
+      <Stack.Screen
+        name="admin/pending"
+        options={{ title: t("account.approvals") }}
+      />
+      <Stack.Screen
+        name="admin/seller-applications"
+        options={{ title: t("account.sellerApplications") }}
+      />
+      <Stack.Screen
+        name="admin/orders"
+        options={{ title: t("account.allOrders") }}
+      />
+    </Stack>
+  );
+}
 
 export default function RootLayout() {
   const [loaded] = useFonts({
@@ -28,55 +100,13 @@ export default function RootLayout() {
   if (!loaded) return null;
 
   return (
-    <AuthProvider>
-      <CartProvider>
-        <StatusBar style="dark" />
-        <Stack
-          screenOptions={{
-            headerStyle: { backgroundColor: colors.chalk },
-            headerShadowVisible: false,
-            headerTintColor: colors.ink,
-            headerTitleStyle: { fontFamily: fonts.black, fontSize: 18 },
-            contentStyle: { backgroundColor: colors.chalk },
-          }}
-        >
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="product/[id]"
-            options={{ title: "", headerTransparent: true }}
-          />
-          <Stack.Screen name="auth/login" options={{ title: "Log in" }} />
-          <Stack.Screen
-            name="auth/register"
-            options={{ title: "Create account" }}
-          />
-          <Stack.Screen name="account/index" options={{ title: "Account" }} />
-          <Stack.Screen name="account/edit" options={{ title: "Edit profile" }} />
-          <Stack.Screen
-            name="account/become-seller"
-            options={{ title: "Sell with us" }}
-          />
-          <Stack.Screen name="orders/index" options={{ title: "My orders" }} />
-          <Stack.Screen name="orders/[id]" options={{ title: "Order" }} />
-          <Stack.Screen name="checkout" options={{ title: "Checkout" }} />
-          <Stack.Screen name="manage/products" options={{ title: "Products" }} />
-          <Stack.Screen
-            name="manage/product-form"
-            options={{ title: "Product" }}
-          />
-          <Stack.Screen name="manage/dashboard" options={{ title: "Dashboard" }} />
-          <Stack.Screen name="manage/record" options={{ title: "Record entry" }} />
-          <Stack.Screen
-            name="admin/pending"
-            options={{ title: "Product approvals" }}
-          />
-          <Stack.Screen
-            name="admin/seller-applications"
-            options={{ title: "Seller applications" }}
-          />
-          <Stack.Screen name="admin/orders" options={{ title: "All orders" }} />
-        </Stack>
-      </CartProvider>
-    </AuthProvider>
+    <I18nProvider>
+      <AuthProvider>
+        <CartProvider>
+          <StatusBar style="dark" />
+          <RootNavigator />
+        </CartProvider>
+      </AuthProvider>
+    </I18nProvider>
   );
 }

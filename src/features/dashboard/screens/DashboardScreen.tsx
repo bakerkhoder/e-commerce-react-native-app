@@ -17,6 +17,8 @@ import { dashboardApi } from "../api/dashboardApi";
 import { BarChart } from "../components/BarChart";
 import { HBars } from "../components/HBars";
 import { Dashboard, InsightSeverity } from "../types";
+import { useTranslation } from "@/i18n";
+import type { TranslationKey } from "@/i18n/locales/ar";
 
 const SEVERITY_COLOR: Record<InsightSeverity, string> = {
   WARNING: colors.tomato,
@@ -24,13 +26,14 @@ const SEVERITY_COLOR: Record<InsightSeverity, string> = {
   INFO: colors.muted,
 };
 
-const SEVERITY_LABEL: Record<InsightSeverity, string> = {
-  WARNING: "Needs attention",
-  OPPORTUNITY: "Opportunity",
-  INFO: "Note",
+const SEVERITY_LABEL_KEY: Record<InsightSeverity, TranslationKey> = {
+  WARNING: "dash.severityWarning",
+  OPPORTUNITY: "dash.severityOpportunity",
+  INFO: "dash.severityInfo",
 };
 
 export function DashboardScreen() {
+  const { t } = useTranslation();
   const [days, setDays] = useState(30);
   const [data, setData] = useState<Dashboard | null>(null);
   const [plan, setPlan] = useState<string | null>(null);
@@ -39,14 +42,14 @@ export function DashboardScreen() {
     async (d: number) => {
       setData(await dashboardApi.get(d));
     },
-    { errorTitle: "Could not load the dashboard" },
+    { errorTitleKey: "dash.loadFailed" },
   );
 
   const { run: generatePlan, pending: planning } = useAsyncAction(
     async () => {
       setPlan((await dashboardApi.aiPlan(days)).plan);
     },
-    { errorTitle: "AI advisor" },
+    { errorTitleKey: "dash.aiAdvisor" },
   );
 
   useFocusEffect(
@@ -60,12 +63,12 @@ export function DashboardScreen() {
   const k = data?.kpis;
   const cards: [string, string][] = k
     ? [
-        ["Revenue", formatCurrency(k.revenue)],
-        ["Profit", formatCurrency(k.profit)],
-        ["Margin", `${k.marginPct}%`],
-        ["Orders", String(k.orders)],
-        ["Units sold", String(k.unitsSold)],
-        ["Spent on stock", formatCurrency(k.spentOnStock)],
+        [t("dash.revenue"), formatCurrency(k.revenue)],
+        [t("dash.profit"), formatCurrency(k.profit)],
+        [t("dash.margin"), `${k.marginPct}%`],
+        [t("dash.orders"), String(k.orders)],
+        [t("dash.unitsSold"), String(k.unitsSold)],
+        [t("dash.spentOnStock"), formatCurrency(k.spentOnStock)],
       ]
     : [];
 
@@ -99,7 +102,7 @@ export function DashboardScreen() {
 
         <View style={s.chips}>
           <Button
-            label="Record purchase"
+            label={t("dash.recordPurchase")}
             icon="plus"
             onPress={() =>
               router.push({
@@ -109,7 +112,7 @@ export function DashboardScreen() {
             }
           />
           <Button
-            label="Record sale"
+            label={t("dash.recordSale")}
             icon="plus"
             variant="secondary"
             onPress={() =>
@@ -123,7 +126,7 @@ export function DashboardScreen() {
 
         {!data && !loading && (
           <AppText variant="small" style={s.muted}>
-            Nothing to show yet. Record a purchase or a sale to get started.
+                        {t("dash.empty")}
           </AppText>
         )}
 
@@ -152,12 +155,12 @@ export function DashboardScreen() {
             </AppText>
 
             <AppText variant="heading" style={s.section}>
-              Revenue &amp; profit
+                            {t("dash.revenueAndProfit")}
             </AppText>
             <BarChart data={data.series} />
 
             <AppText variant="heading" style={s.section}>
-              Top sellers
+                            {t("dash.topSellers")}
             </AppText>
             <HBars
               rows={data.topProducts.map((p) => ({
@@ -168,7 +171,7 @@ export function DashboardScreen() {
             />
 
             <AppText variant="heading" style={s.section}>
-              Most viewed
+                            {t("dash.mostViewed")}
             </AppText>
             <HBars
               rows={data.mostViewed.map((v) => ({
@@ -181,22 +184,22 @@ export function DashboardScreen() {
             {data.lowStock.length > 0 && (
               <>
                 <AppText variant="heading" style={s.section}>
-                  Low stock
+                  {t("dash.lowStock")}
                 </AppText>
                 {data.lowStock.map((p) => (
                   <AppText key={p.productId} variant="body" style={s.line}>
-                    {p.name}: {p.stock} left
+                    {t("dash.leftName", { name: p.name, count: p.stock })}
                   </AppText>
                 ))}
               </>
             )}
 
             <AppText variant="heading" style={s.section}>
-              Insights
+              {t("dash.insights")}
             </AppText>
             {data.insights.length === 0 && (
               <AppText variant="small" style={s.muted}>
-                Nothing to flag yet. Insights appear as views and sales build up.
+                {t("dash.noInsights")}
               </AppText>
             )}
             {data.insights.map((i, idx) => (
@@ -208,7 +211,7 @@ export function DashboardScreen() {
                   variant="small"
                   style={[s.insightKind, { color: SEVERITY_COLOR[i.severity] }]}
                 >
-                  {SEVERITY_LABEL[i.severity]}
+                  {t(SEVERITY_LABEL_KEY[i.severity])}
                 </AppText>
                 <AppText variant="body" style={s.insightTitle}>
                   {i.title}
@@ -224,8 +227,8 @@ export function DashboardScreen() {
               onPress={() => generatePlan()}
               disabled={planning}
             >
-              <AppText variant="small" style={s.actionText}>
-                {planning ? "Thinking…" : "Generate AI action plan"}
+              <AppText variant="small" style={s.actionText} color={colors.onSea}>
+                {planning ? t("dash.thinking") : t("dash.generatePlanShort")}
               </AppText>
             </Pressable>
             {plan && (
@@ -235,14 +238,12 @@ export function DashboardScreen() {
             )}
 
             <AppText variant="small" style={s.hint}>
-              Revenue counts online orders marked Paid or later, plus sales you record
-              (shipping excluded). Profit uses each product&apos;s recorded cost. Views are
-              counted when a customer opens a product page.
+              {t("dash.revenueHint")}
             </AppText>
           </>
         )}
       </ScrollView>
-      <LoadingOverlay visible={planning} message="Analyzing your numbers..." />
+      <LoadingOverlay visible={planning} message={t("dash.analyzing")} />
     </>
   );
 }
@@ -260,7 +261,7 @@ const s = StyleSheet.create({
   chipActive: { backgroundColor: colors.ink, borderColor: colors.ink },
   chipText: { color: colors.ink },
   chipTextActive: { color: colors.onSea },
-  actionText: { color: colors.onSea },
+  actionText: { color: colors.onSea, textAlign: "center" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   card: {
     width: "31%",

@@ -2,6 +2,7 @@ import { ComponentProps, ReactNode, useState } from "react";
 import { StyleSheet, TextInput, TextInputProps, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { AppText } from "./AppText";
+import { useTranslation } from "../../i18n";
 import { colors, fonts, radius, space } from "../theme";
 
 export function Input({
@@ -18,6 +19,7 @@ export function Input({
   right?: ReactNode;
 }) {
   const [focused, setFocused] = useState(false);
+  const { language, direction } = useTranslation();
 
   return (
     <View style={{ marginBottom: space.md }}>
@@ -30,6 +32,11 @@ export function Input({
         {icon && <Feather name={icon} size={18} color={colors.muted} />}
         <TextInput
           {...props}
+          // The native input keeps its old hint when only the `placeholder` prop
+          // changes, so a new translation can sit invisible until the field is
+          // focused. Keying on language + direction rebuilds the native view; the
+          // value itself still lives in the parent's state.
+          key={`${language}-${direction}`}
           placeholderTextColor="#8B98A5"
           style={[s.input, style]}
           onFocus={(e) => {

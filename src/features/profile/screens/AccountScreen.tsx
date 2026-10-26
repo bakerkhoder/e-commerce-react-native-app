@@ -2,36 +2,55 @@ import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { useAuth } from "../../auth/context/AuthContext";
 import { AppText } from "@/shared/components/AppText";
+import { Button } from "@/shared/components/Button";
 import { EmptyState } from "@/shared/components/EmptyState";
+import { LanguageSwitcher } from "@/shared/components/LanguageSwitcher";
 import { ListGroup, ListRow } from "@/shared/components/ListRow";
+import { useTranslation } from "@/i18n";
 import { colors, space } from "@/shared/theme";
 
 export function AccountScreen() {
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
 
+  // Signed out, language is still reachable: it must not be locked behind a login.
   if (!user) {
     return (
-      <EmptyState
-        icon="user"
-        title="You're not logged in"
-        message="Log in to see your orders and save your delivery details."
-        action={{ label: "Log in", onPress: () => router.replace("/auth/login") }}
-      />
+      <ScrollView contentContainerStyle={s.signedOut}>
+        <EmptyState
+          icon="user"
+          title={t("account.notLoggedTitle")}
+          message={t("account.notLoggedMessage")}
+          action={{
+            label: t("account.login"),
+            onPress: () => router.replace("/auth/login"),
+          }}
+        />
+
+        <AppText variant="heading" style={s.section}>
+          {t("account.language")}
+        </AppText>
+        <LanguageSwitcher />
+      </ScrollView>
     );
   }
 
   const confirmLogout = () =>
-    Alert.alert("Log out of your account?", "You can log back in anytime.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Log out",
-        style: "destructive",
-        onPress: async () => {
-          await logout();
-          router.replace("/(tabs)");
+    Alert.alert(
+      t("account.logoutConfirmTitle"),
+      t("account.logoutConfirmMessage"),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("account.logout"),
+          style: "destructive",
+          onPress: async () => {
+            await logout();
+            router.replace("/(tabs)");
+          },
         },
-      },
-    ]);
+      ],
+    );
 
   const isAdmin = user.role === "ADMIN";
   const isSeller = user.role === "SELLER";
@@ -51,19 +70,19 @@ export function AccountScreen() {
           </AppText>
           {(isAdmin || isSeller) && (
             <AppText variant="small" color={colors.sea}>
-              {isAdmin ? "Admin" : "Seller"}
+              {isAdmin ? t("account.admin") : t("account.seller")}
             </AppText>
           )}
         </View>
       </View>
 
       <AppText variant="heading" style={s.section}>
-        Shopping
+        {t("account.shopping")}
       </AppText>
       <ListGroup>
         <ListRow
           icon="package"
-          label="My orders"
+          label={t("account.myOrders")}
           onPress={() => router.push("/orders")}
         />
       </ListGroup>
@@ -71,37 +90,37 @@ export function AccountScreen() {
       {(isAdmin || isSeller) && (
         <>
           <AppText variant="heading" style={s.section}>
-            Manage your shop
+            {t("account.manageShop")}
           </AppText>
           <ListGroup>
             <ListRow
               icon="bar-chart-2"
-              label="Dashboard"
+              label={t("account.dashboard")}
               onPress={() => router.push("/manage/dashboard")}
             />
             <ListRow
               icon="box"
-              label={isAdmin ? "Products" : "My products"}
+              label={isAdmin ? t("account.products") : t("account.myProducts")}
               onPress={() => router.push("/manage/products")}
             />
             {isAdmin && (
               <ListRow
                 icon="check-square"
-                label="Product approvals"
+                label={t("account.approvals")}
                 onPress={() => router.push("/admin/pending")}
               />
             )}
             {isAdmin && (
               <ListRow
                 icon="users"
-                label="Seller applications"
+                label={t("account.sellerApplications")}
                 onPress={() => router.push("/admin/seller-applications")}
               />
             )}
             {isAdmin && (
               <ListRow
                 icon="list"
-                label="All orders"
+                label={t("account.allOrders")}
                 onPress={() => router.push("/admin/orders")}
               />
             )}
@@ -110,24 +129,29 @@ export function AccountScreen() {
       )}
 
       <AppText variant="heading" style={s.section}>
-        Account
+        {t("account.language")}
+      </AppText>
+      <LanguageSwitcher />
+
+      <AppText variant="heading" style={s.section}>
+        {t("account.settings")}
       </AppText>
       <ListGroup>
         <ListRow
           icon="edit-2"
-          label="Edit profile"
+          label={t("account.editProfile")}
           onPress={() => router.push("/account/edit")}
         />
         {user.role === "CUSTOMER" && (
           <ListRow
             icon="briefcase"
-            label="Sell with us"
+            label={t("account.sellWithUs")}
             onPress={() => router.push("/account/become-seller")}
           />
         )}
         <ListRow
           icon="log-out"
-          label="Log out"
+          label={t("account.logout")}
           tone="danger"
           onPress={confirmLogout}
         />
@@ -138,6 +162,7 @@ export function AccountScreen() {
 
 const s = StyleSheet.create({
   container: { padding: space.lg, paddingBottom: space.xxl },
+  signedOut: { flexGrow: 1, padding: space.lg, paddingBottom: space.xxl },
   header: {
     flexDirection: "row",
     alignItems: "center",

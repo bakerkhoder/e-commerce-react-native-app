@@ -10,12 +10,14 @@ import { formatCurrency, formatDate } from "@/shared/utils/format";
 import { AppText } from "@/shared/components/AppText";
 import { EmptyState } from "@/shared/components/EmptyState";
 import { colors, radius, space } from "@/shared/theme";
+import { useTranslation } from "@/i18n";
 import { ordersApi } from "../api/ordersApi";
 import { OrderStatusBadge } from "../components/OrderStatusBadge";
 import { Order } from "../types";
 
 export function OrderDetailScreen({ orderId }: { orderId: number }) {
   const [order, setOrder] = useState<Order | null>(null);
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,8 +40,8 @@ export function OrderDetailScreen({ orderId }: { orderId: number }) {
     return (
       <EmptyState
         icon="alert-circle"
-        title="Order not found"
-        message="It may have been removed, or the link is out of date."
+        title={t("orders.notFoundTitle")}
+        message={t("orders.notFoundMessage")}
       />
     );
   }
@@ -100,7 +102,7 @@ export function OrderDetailScreen({ orderId }: { orderId: number }) {
         </View>
         <View style={[s.divider, { marginTop: space.sm }]} />
         <View style={s.totalLine}>
-          <AppText variant="heading">Total</AppText>
+          <AppText variant="heading">{t("orders.total")}</AppText>
           <AppText variant="price">{formatCurrency(order.totalAmount)}</AppText>
         </View>
       </View>
@@ -108,7 +110,7 @@ export function OrderDetailScreen({ orderId }: { orderId: number }) {
       {address && (
         <>
           <AppText variant="heading" style={s.section}>
-            Delivering to
+                        {t("orders.deliveringTo")}
           </AppText>
           <View style={s.card}>
             <View style={s.addrRow}>
